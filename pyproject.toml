@@ -6,5 +6,9 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.128.1",
-    "ruff>=0.15.0"
+    "ruff>=0.15.0",
+    "yappi>=1.7.3"
 ]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = true
