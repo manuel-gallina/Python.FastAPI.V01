@@ -1,0 +1,8 @@
+{
+  "name": "python-fastapi-v01",
+  "engineVersion": "v0.19.10",
+  "sdk": {
+    "source": "python"
+  },
+  "source": ".dagger"
+}
