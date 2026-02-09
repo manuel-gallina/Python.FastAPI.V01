@@ -13,7 +13,7 @@ dev = [
     "dagger-io>=0.19.11",
     "pytest>=9.0.2",
     "ruff>=0.15.0",
-    "yappi>=1.7.3",
+    "yappi>=1.7.3"
 ]
 
 [tool.ruff.format]

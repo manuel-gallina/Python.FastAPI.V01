@@ -1,0 +1,9 @@
+services:
+  api:
+    image: ghcr.io/manuel-gallina/python-fastapi-v01:0.1.0
+    ports:
+      - "9101:8000"
+    command:
+      - fastapi
+      - run
+      - /project/src/main.py

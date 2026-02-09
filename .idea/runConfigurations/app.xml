@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="app" type="Python.FastAPI">
-    <option name="additionalOptions" />
+    <option name="additionalOptions" value="--port 9101" />
     <option name="file" value="$PROJECT_DIR$/src/main.py" />
     <module name="Python.FastAPI.V01" />
     <option name="ENV_FILES" value="" />
