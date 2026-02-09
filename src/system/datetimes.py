@@ -1,6 +1,10 @@
-from datetime import UTC, datetime, tzinfo
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from system.settings import get_settings
 
 
 def current_datetime() -> datetime:
     """Get the current datetime."""
-    return datetime.now(tz=UTC)
+    settings = get_settings()
+    return datetime.now(tz=ZoneInfo(settings.timezone))

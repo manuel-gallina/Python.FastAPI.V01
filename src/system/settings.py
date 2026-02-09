@@ -57,6 +57,7 @@ class Settings(BaseSettings):
 
     project: ProjectSettings
     database: DatabaseSettings
+    timezone: str = "Europe/Rome"
 
     model_config = SettingsConfigDict(
         env_file=".env",
