@@ -1,3 +1,5 @@
+![Banner](./docs/logo/logo.svg)
+
 # Python.FastAPI.V1
 
 Template project for FastAPI.
