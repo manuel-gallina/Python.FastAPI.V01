@@ -27,3 +27,9 @@ dagger call test
 ```powershell
 dagger call publish --token cmd://"op read op://employee/github/dagger/password"
 ```
+
+### Export OpenAPI schema
+
+```powershell
+dagger call export-openapi-schema -o ./docs/openapi.yaml
+```

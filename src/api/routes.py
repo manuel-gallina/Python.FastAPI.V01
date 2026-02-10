@@ -8,5 +8,5 @@ from fastapi.responses import ORJSONResponse
 
 from api.server_info.routes import router as server_info_router
 
-router = APIRouter(prefix="/api", tags=["api"], default_response_class=ORJSONResponse)
+router = APIRouter(prefix="/api", default_response_class=ORJSONResponse)
 router.include_router(server_info_router)

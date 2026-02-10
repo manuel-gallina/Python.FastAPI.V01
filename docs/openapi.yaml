@@ -6,7 +6,6 @@ paths:
   /api/server-info:
     get:
       tags:
-      - api
       - server-info
       summary: Get Server Info
       operationId: get_server_info_api_server_info_get
