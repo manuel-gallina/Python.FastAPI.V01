@@ -1,0 +1,73 @@
+openapi: 3.1.0
+info:
+  title: FastAPI
+  version: 0.1.0
+paths:
+  /api/server-info:
+    get:
+      tags:
+      - api
+      - server-info
+      summary: Get Server Info
+      operationId: get_server_info_api_server_info_get
+      responses:
+        '200':
+          description: Server information retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectResponseSchema_GetServerInfoResponseSchema_'
+components:
+  schemas:
+    DatabaseInfoSchema:
+      properties:
+        status:
+          $ref: '#/components/schemas/ServerStatus'
+        version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Version
+      type: object
+      required:
+      - status
+      - version
+      title: DatabaseInfoSchema
+    GetServerInfoResponseSchema:
+      properties:
+        serverVersion:
+          type: string
+          title: Serverversion
+        currentDatetime:
+          type: string
+          title: Currentdatetime
+        subsystems:
+          $ref: '#/components/schemas/SubsystemsInfoSchema'
+      type: object
+      required:
+      - serverVersion
+      - currentDatetime
+      - subsystems
+      title: GetServerInfoResponseSchema
+    ObjectResponseSchema_GetServerInfoResponseSchema_:
+      properties:
+        data:
+          $ref: '#/components/schemas/GetServerInfoResponseSchema'
+      type: object
+      required:
+      - data
+      title: ObjectResponseSchema[GetServerInfoResponseSchema]
+    ServerStatus:
+      type: string
+      enum:
+      - ok
+      - offline
+      title: ServerStatus
+    SubsystemsInfoSchema:
+      properties:
+        mainDb:
+          $ref: '#/components/schemas/DatabaseInfoSchema'
+      type: object
+      required:
+      - mainDb
+      title: SubsystemsInfoSchema

@@ -7,6 +7,7 @@ from dagger import DefaultPath, Doc, Ignore, dag, function, object_type
 
 @object_type
 class PythonFastapiV01:
+    PROJECT_PATH = "/project"
     BASE_IGNORES = [
         "**/.venv",
         "**/__pycache__",
@@ -39,7 +40,6 @@ class PythonFastapiV01:
         venv_path = "/venv"
         uv_bin = dag.container().from_("ghcr.io/astral-sh/uv:0.10.0").file("/uv")
         uv_path = "/usr/local/bin/uv"
-        project_path = "/project"
 
         # Builder container
         builder = (
@@ -58,8 +58,8 @@ class PythonFastapiV01:
             )
             .with_file(uv_path, uv_bin)
             .with_env_variable("UV_PROJECT_ENVIRONMENT", venv_path)
-            .with_directory(project_path, source)
-            .with_workdir(project_path)
+            .with_directory(self.PROJECT_PATH, source)
+            .with_workdir(self.PROJECT_PATH)
             .with_mounted_cache("/root/.cache/uv", dag.cache_volume("uv-cache"))
         )
         sync_cmd = ["uv", "sync"]
@@ -71,10 +71,12 @@ class PythonFastapiV01:
         runner = (
             dag.container()
             .from_("python:3.13-slim")
-            .with_directory(project_path, source)
-            .with_workdir(project_path)
+            .with_directory(self.PROJECT_PATH, source)
+            .with_workdir(self.PROJECT_PATH)
             .with_directory(venv_path, builder.directory(venv_path))
-            .with_env_variable("PATH", f"{venv_path}/bin:$PATH", expand=True)
+            .with_env_variable(
+                "PATH", ":".join([f"{venv_path}/bin", "$PATH"]), expand=True
+            )
             .with_env_variable("VIRTUAL_ENV", venv_path)
         )
         if not development:
@@ -89,6 +91,26 @@ class PythonFastapiV01:
             .with_exec(["pytest"])
             .stdout()
         )
+
+    @function
+    async def export_openapi_schema(self, source: SourceDir) -> dagger.File:
+        openapi_schema_file = (
+            await self.build_env(source, development=True)
+            .with_workdir(f"{self.PROJECT_PATH}/src")
+            .with_exec(
+                [
+                    "python",
+                    "-c",
+                    "from utils.openapi import export_schema; export_schema('../docs/openapi.yaml')",
+                ]
+            )
+            .with_workdir(self.PROJECT_PATH)
+            .file("docs/openapi.yaml")
+        )
+
+        await openapi_schema_file.export("docs/openapi.yaml")
+
+        return openapi_schema_file
 
     @function
     async def publish(
