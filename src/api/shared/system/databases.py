@@ -1,7 +1,7 @@
-from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from starlette.requests import Request
 
-from system.settings import DatabaseConnection
+from api.shared.system.settings import DatabaseConnection
 
 
 def get_async_db_engine(database_connection: DatabaseConnection) -> AsyncEngine:

@@ -1,4 +1,4 @@
-from api.v1.shared.schemas.base import BaseSchema
+from api.shared.schemas.base import BaseSchema
 
 
 class ErrorResponseSchema(BaseSchema):

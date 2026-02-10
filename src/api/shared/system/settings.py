@@ -23,7 +23,6 @@ class DatabaseConnection(BaseModel):
     pool_size: int = 20
     max_overflow: int = -1
 
-    @computed_field
     @property
     def url(self) -> str:
         """The database connection string."""
@@ -45,7 +44,11 @@ class DatabaseSettings(BaseModel):
 
 
 class ProjectSettings(BaseModel):
-    """Project settings."""
+    """
+    Project settings.
+
+    This is intended to be loaded from the pyproject.toml file.
+    """
 
     name: str
     version: str

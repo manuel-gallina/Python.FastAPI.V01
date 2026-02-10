@@ -1,0 +1,4 @@
+### GET server info
+GET {{host}}/api/server-info
+
+###

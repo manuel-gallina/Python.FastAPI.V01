@@ -1,7 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from system.settings import get_settings
+from api.shared.system.settings import get_settings
 
 
 def current_datetime() -> datetime:
