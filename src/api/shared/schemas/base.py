@@ -16,4 +16,6 @@ class BaseSchema(BaseModel):
     It is configured to generate field aliases using camelCase convention.
     """
 
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    model_config = ConfigDict(
+        alias_generator=to_camel, populate_by_name=True, serialize_by_alias=True
+    )
