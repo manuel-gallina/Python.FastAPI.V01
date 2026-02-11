@@ -1,7 +1,8 @@
 [project]
 name = "python-fastapi-v01"
+title = "FastAPI Template V1"
 version = "0.1.0-dev.0"
-description = "Template project for FastAPI applications"
+description = "Template project for FastAPI applications."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

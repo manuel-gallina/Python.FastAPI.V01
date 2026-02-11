@@ -51,6 +51,7 @@ class ProjectSettings(BaseModel):
     """
 
     name: str
+    title: str
     version: str
     description: str
 

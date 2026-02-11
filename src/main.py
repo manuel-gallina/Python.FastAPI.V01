@@ -56,5 +56,10 @@ async def lifespan(app_: FastAPI) -> AsyncGenerator[None, Any]:
     logger.info("Application shut down successfully.")
 
 
-app = FastAPI(title=settings.project.name, lifespan=lifespan)
+app = FastAPI(
+    version=settings.project.version,
+    title=settings.project.title,
+    description=settings.project.description,
+    lifespan=lifespan,
+)
 app.include_router(api_router)
