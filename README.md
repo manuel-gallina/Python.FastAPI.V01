@@ -16,20 +16,8 @@ Automated tests are implemented with pytest, and are organized in three levels:
 
 CI/CD pipeline is implemented using Dagger.
 
-### Tests
+### Examples of Dagger calls
 
-```powershell
-dagger call test
-```
-
-### Publish
-
-```powershell
-dagger call publish --token cmd://"op read op://employee/github/dagger/password"
-```
-
-### Export OpenAPI schema
-
-```powershell
-dagger call export-openapi-schema -o ./docs/openapi.yaml
-```
+- Run tests<br>`dagger call test`
+- Publish Docker image<br>`dagger call publish-docker-image --token cmd://"op read op://employee/github/password"`
+- Export OpenAPI schema<br>`dagger call export-openapi-schema -o .`

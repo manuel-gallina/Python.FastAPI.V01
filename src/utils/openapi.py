@@ -14,5 +14,6 @@ def export_schema(dst: str) -> None:
 
     """
     openapi_schema = app.openapi()
+    openapi_schema["info"]["x-logo"] = {"url": "./logo/logo.png", "altText": "Logo"}
     with open(dst, "w") as f:
         yaml.dump(openapi_schema, f, sort_keys=False)

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>API Documentation</title>
+    <link rel="icon" type="image/png" href="./logo/logo.png"/>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
@@ -10,8 +11,20 @@
         padding: 0;
     }</style>
 </head>
+
 <body>
-<redoc spec-url='./openapi.yaml'></redoc>
+<div id="redoc-container"></div>
+<!--suppress JSUnresolvedLibraryURL -->
 <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+<script>
+    Redoc.init(
+        './openapi.yaml',
+        {
+            hideDownloadButton: true,
+            hideTryItPanel: true
+        },
+        document.getElementById('redoc-container')
+    );
+</script>
 </body>
 </html>

@@ -37,6 +37,21 @@ class PythonFastapiV01:
         source: SourceDir,
         development: Annotated[bool, Doc("install development dependencies")] = False,
     ) -> dagger.Container:
+        """
+        Builds the container environment for the application.
+
+        The build process is split into two stages: a builder stage where the dependencies are installed
+        and a runner stage where the application code and the installed dependencies are combined
+        to create the final container.
+
+        Args:
+            source (SourceDir): The project source directory.
+            development (bool): Whether to install development dependencies.
+
+        Returns:
+            dagger.Container: The container with the built environment.
+        """
+        base_image = "python:3.13-slim"
         venv_path = "/venv"
         uv_bin = dag.container().from_("ghcr.io/astral-sh/uv:0.10.0").file("/uv")
         uv_path = "/usr/local/bin/uv"
@@ -44,7 +59,7 @@ class PythonFastapiV01:
         # Builder container
         builder = (
             dag.container()
-            .from_("python:3.13-slim")
+            .from_(base_image)
             .with_exec(
                 [
                     "sh",
@@ -70,12 +85,19 @@ class PythonFastapiV01:
         # Final container
         runner = (
             dag.container()
-            .from_("python:3.13-slim")
+            .from_(base_image)
             .with_directory(self.PROJECT_PATH, source)
             .with_workdir(self.PROJECT_PATH)
             .with_directory(venv_path, builder.directory(venv_path))
             .with_env_variable(
                 "PATH", ":".join([f"{venv_path}/bin", "$PATH"]), expand=True
+            )
+            .with_env_variable(
+                "PYTHONPATH",
+                ":".join(
+                    [self.PROJECT_PATH, f"{self.PROJECT_PATH}/src", "$PYTHONPATH"]
+                ),
+                expand=True,
             )
             .with_env_variable("VIRTUAL_ENV", venv_path)
         )
@@ -86,6 +108,15 @@ class PythonFastapiV01:
 
     @function
     async def test(self, source: TestSourceDir) -> str:
+        """
+        Runs the tests using pytest.
+
+        Args:
+            source (TestSourceDir): The project source directory.
+
+        Returns:
+            str: The output of the pytest command.
+        """
         return (
             await self.build_env(source, development=True)
             .with_exec(["pytest"])
@@ -93,33 +124,56 @@ class PythonFastapiV01:
         )
 
     @function
-    async def export_openapi_schema(self, source: SourceDir) -> dagger.File:
+    async def export_openapi_schema(self, source: SourceDir) -> dagger.Directory:
+        """
+        Exports the OpenAPI schema to a file.
+
+        When calling this Dagger function ensure to specify the -o, --output option, otherwise the output will
+        be lost as the directory is created inside the container.
+
+        E.g. dagger call export-openapi-schema -o .
+
+        Args:
+            source (SourceDir): The project source directory.
+
+        Returns:
+            dagger.Directory: A directory containing the exported OpenAPI schema file.
+        """
+        openapi_schema_path = "./docs/openapi.yaml"
         openapi_schema_file = (
             await self.build_env(source, development=True)
-            .with_workdir(f"{self.PROJECT_PATH}/src")
+            .with_workdir(self.PROJECT_PATH)
             .with_exec(
                 [
                     "python",
                     "-c",
-                    "from utils.openapi import export_schema; export_schema('../docs/openapi.yaml')",
+                    f"from utils.openapi import export_schema; export_schema('{openapi_schema_path}')",
                 ]
             )
-            .with_workdir(self.PROJECT_PATH)
-            .file("docs/openapi.yaml")
+            .file(openapi_schema_path)
         )
-
-        await openapi_schema_file.export("docs/openapi.yaml")
-
-        return openapi_schema_file
+        return dag.directory().with_file(openapi_schema_path, openapi_schema_file)
 
     @function
-    async def publish(
+    async def publish_docker_image(
         self,
         source: SourceDir,
         token: Annotated[dagger.Secret, Doc("registry token")],
         registry: Annotated[str, Doc("registry url")] = "ghcr.io",
         username: Annotated[str, Doc("registry username")] = "manuel-gallina",
     ) -> list[str]:
+        """
+        Publish the Docker image to the specified registry.
+
+        Args:
+            source (SourceDir): The project source directory.
+            token (dagger.Secret): The registry token for authentication.
+            registry (str): The registry URL where the image will be published.
+            username (str): The registry username for authentication.
+
+        Returns:
+            list[str]: A list of published image tags.
+        """
         pyproject_toml = await source.file("pyproject.toml").contents()
         project_version = tomllib.loads(pyproject_toml)["project"]["version"]
 

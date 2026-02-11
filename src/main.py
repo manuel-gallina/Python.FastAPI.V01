@@ -17,6 +17,8 @@ from api.shared.system.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
+settings = get_settings()
+
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI) -> AsyncGenerator[None, Any]:
@@ -34,8 +36,6 @@ async def lifespan(app_: FastAPI) -> AsyncGenerator[None, Any]:
             for setup and teardown logic to be executed.
     """
     logger.debug("Starting up...")
-
-    settings = get_settings()
 
     logger.debug("Starting main database engine...")
     main_async_db_engine = get_async_db_engine(settings.database.main_connection)
@@ -56,5 +56,5 @@ async def lifespan(app_: FastAPI) -> AsyncGenerator[None, Any]:
     logger.info("Application shut down successfully.")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(title=settings.project.name, lifespan=lifespan)
 app.include_router(api_router)

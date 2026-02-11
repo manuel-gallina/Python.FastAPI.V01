@@ -40,7 +40,7 @@ class DatabaseConnection(BaseModel):
 class DatabaseSettings(BaseModel):
     """Database settings."""
 
-    main_connection: DatabaseConnection
+    main_connection: DatabaseConnection | None = None
 
 
 class ProjectSettings(BaseModel):

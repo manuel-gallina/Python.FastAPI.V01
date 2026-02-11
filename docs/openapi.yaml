@@ -1,7 +1,10 @@
 openapi: 3.1.0
 info:
-  title: FastAPI
+  title: python-fastapi-v01
   version: 0.1.0
+  x-logo:
+    url: ./logo/logo.png
+    altText: Logo
 paths:
   /api/server-info:
     get:
