@@ -174,6 +174,9 @@ class PythonFastapiV01:
         Returns:
             list[str]: A list of published image tags.
         """
+        # TODO: username is used both for authentication and as part of the image path
+        #   we should separate these two concepts and allow for a different image path
+        #   or derive the image path from the username.
         pyproject_toml = await source.file("pyproject.toml").contents()
         project_version = tomllib.loads(pyproject_toml)["project"]["version"]
 
