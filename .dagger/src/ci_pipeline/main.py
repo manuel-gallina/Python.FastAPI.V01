@@ -107,9 +107,9 @@ class PythonFastapiV01:
         return runner
 
     @function
-    async def test(self, source: TestSourceDir) -> str:
+    async def test_unit(self, source: TestSourceDir) -> str:
         """
-        Runs the tests using pytest.
+        Runs the unit tests using pytest.
 
         Args:
             source (TestSourceDir): The project source directory.
@@ -119,8 +119,68 @@ class PythonFastapiV01:
         """
         return (
             await self.build_env(source, development=True)
-            .with_exec(["pytest"])
+            .with_exec(["pytest", "tests/unit_tests"])
             .stdout()
+        )
+
+    @function
+    async def test_integration(self, source: TestSourceDir) -> str:
+        """
+        Runs the integration tests using pytest.
+
+        Args:
+            source (TestSourceDir): The project source directory.
+
+        Returns:
+            str: The output of the pytest command.
+        """
+        return (
+            await self.build_env(source, development=True)
+            .with_exec(["pytest", "tests/integration_tests"])
+            .stdout()
+        )
+
+    @function
+    async def test_acceptance(self, source: TestSourceDir) -> str:
+        """
+        Runs the acceptance tests using pytest.
+
+        Args:
+            source (TestSourceDir): The project source directory.
+
+        Returns:
+            str: The output of the pytest command.
+        """
+        return (
+            await self.build_env(source, development=True)
+            .with_exec(["pytest", "tests/acceptance_tests"])
+            .stdout()
+        )
+
+    @function
+    async def test(self, source: TestSourceDir) -> str:
+        """
+        Runs all levels tests using pytest.
+
+        Args:
+            source (TestSourceDir): The project source directory.
+
+        Returns:
+            str: The output of the three pytest commands.
+        """
+        unit_tests_output = await self.test_unit(source)
+        integration_tests_output = await self.test_integration(source)
+        acceptance_tests_output = await self.test_acceptance(source)
+
+        return "\n".join(
+            [
+                "Unit Tests Output:",
+                unit_tests_output,
+                "Integration Tests Output:",
+                integration_tests_output,
+                "Acceptance Tests Output:",
+                acceptance_tests_output,
+            ]
         )
 
     @function
