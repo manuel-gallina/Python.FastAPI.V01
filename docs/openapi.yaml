@@ -8,9 +8,9 @@ info:
 paths:
   /api/server-info:
     get:
-      tags:
-      - server-info
       summary: Get Server Info
+      description: Endpoint to retrieve server information, including version, current
+        datetime and subsystems info.
       operationId: get_server_info_api_server_info_get
       responses:
         '200':
@@ -25,26 +25,30 @@ components:
       properties:
         status:
           $ref: '#/components/schemas/ServerStatus'
+          description: The status of the database connection.
         version:
           anyOf:
           - type: string
           - type: 'null'
           title: Version
+          description: The version of the database server, if available.
       type: object
       required:
       - status
-      - version
       title: DatabaseInfoSchema
     GetServerInfoResponseSchema:
       properties:
         serverVersion:
           type: string
           title: Serverversion
+          description: The version of the server application.
         currentDatetime:
           type: string
           title: Currentdatetime
+          description: The current date and time on the server.
         subsystems:
           $ref: '#/components/schemas/SubsystemsInfoSchema'
+          description: Information about the server subsystems.
       type: object
       required:
       - serverVersion
@@ -69,6 +73,7 @@ components:
       properties:
         mainDb:
           $ref: '#/components/schemas/DatabaseInfoSchema'
+          description: Information about the main database.
       type: object
       required:
       - mainDb

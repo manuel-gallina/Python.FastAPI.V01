@@ -14,8 +14,8 @@ from api.shared.schemas.responses import ObjectResponseSchema
 from api.shared.system.datetimes import current_datetime
 from api.shared.system.settings import Settings, get_settings
 
-router = APIRouter(prefix="/server-info", tags=["server-info"])
 logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/server-info")
 
 
 @router.get(
@@ -31,6 +31,9 @@ async def get_server_info(
     settings: Settings = Depends(get_settings),
     main_db_info: DatabaseInfoSchema = Depends(MainDbInfoRepository.get),
 ):
+    """
+    Endpoint to retrieve server information, including version, current datetime and subsystems info.
+    """
     return ORJSONResponse(
         ObjectResponseSchema(
             data=GetServerInfoResponseSchema(
