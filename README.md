@@ -19,5 +19,6 @@ CI/CD pipeline is implemented using Dagger.
 ### Examples of Dagger calls
 
 - Run tests<br>`dagger call test`
-- Publish Docker image<br>`dagger call publish-docker-image --token cmd://"op read op://employee/github/password"`
+- Publish Docker image<br>
+  `dagger call publish-docker-image --token cmd://"op read op://employee/github/dagger/password"`
 - Export OpenAPI schema<br>`dagger call export-openapi-schema -o .`

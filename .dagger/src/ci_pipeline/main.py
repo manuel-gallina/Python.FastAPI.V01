@@ -151,8 +151,29 @@ class PythonFastapiV01:
         Returns:
             str: The output of the pytest command.
         """
+        api_container = (
+            await self.build_env(source)
+            .with_exposed_port(8000)
+            .with_exec(["fastapi", "run", "/project/src/main.py"])
+            .as_service()
+        )
+
+        postgres_container = (
+            dag.container()
+            .from_("postgres:18")
+            .with_env_variable("POSTGRES_USER", "admin")
+            .with_env_variable("POSTGRES_PASSWORD", "admin")
+            .with_env_variable("POSTGRES_DB", "python_fastapi_v01")
+            .with_exposed_port(5432)
+            .as_service()
+        )
+
         return (
             await self.build_env(source, development=True)
+            .with_env_variable("API_BASE_URL", "http://api:8000")
+            .with_env_variable("DATABASE__MAIN_CONNECTION__HOST", "db")
+            .with_service_binding("api", api_container)
+            .with_service_binding("db", postgres_container)
             .with_exec(["pytest", "tests/acceptance_tests"])
             .stdout()
         )
