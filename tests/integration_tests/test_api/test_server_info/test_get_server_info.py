@@ -1,6 +1,6 @@
 from fastapi import status
 from httpx import AsyncClient
-from testing_utils.datetimes import MockDatetimeProvider
+from testing_utils.datetimes import DEFAULT_CURRENT_DATETIME_MOCK, MockDatetimeProvider
 
 from api.server_info.repositories import MainDbInfoRepository
 from api.server_info.schemas import DatabaseInfoSchema, ServerStatus
@@ -19,6 +19,8 @@ async def test_success(http_test_client: AsyncClient):
         settings = get_settings()
         settings.project.version = "1.0.0"
         return settings
+
+    MockDatetimeProvider.set_current_datetime(DEFAULT_CURRENT_DATETIME_MOCK)
 
     app.dependency_overrides = {
         MainDbInfoRepository.get: mock_main_db_info_repository_get,
