@@ -14,6 +14,6 @@ async def test_success(http_client: AsyncClient):
         "data": {
             "currentDatetime": ANY,
             "serverVersion": ANY,
-            "subsystems": {"mainDb": {"status": "offline", "version": ANY}},
+            "subsystems": {"mainDb": {"status": "ok", "version": ANY}},
         }
     }
