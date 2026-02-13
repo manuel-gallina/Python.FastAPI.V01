@@ -7,7 +7,7 @@ from httpx import ASGITransport, AsyncClient
 from main import app
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def http_test_client() -> AsyncGenerator[AsyncClient, Any]:
     async with LifespanManager(app) as manager:
         async with AsyncClient(
