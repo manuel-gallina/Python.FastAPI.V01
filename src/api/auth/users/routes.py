@@ -22,6 +22,11 @@ async def get_all(
     all_users_count: int = Depends(UsersRepository.count_all),
 ):
     return ListResponseSchema(
-        data=[GetAllUsersResponseSchema.model_validate(user) for user in all_users],
+        data=[
+            GetAllUsersResponseSchema(
+                id=user.id, full_name=user.full_name, email=user.email
+            )
+            for user in all_users
+        ],
         meta=ListResponseSchema.MetaSchema(count=all_users_count),
     )

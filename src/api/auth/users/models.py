@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class User(BaseModel):
@@ -8,3 +8,5 @@ class User(BaseModel):
     full_name: str
     email: str
     password_hash: str
+
+    # model_config = ConfigDict(from_attributes=True)
