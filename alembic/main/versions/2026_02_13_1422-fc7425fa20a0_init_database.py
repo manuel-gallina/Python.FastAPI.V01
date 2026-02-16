@@ -19,24 +19,21 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    op.execute("create schema auth;")
     op.execute("""
-    create schema auth;
-
-    create table auth."user"
-    (
-        id        int generated always as identity
-            constraint u__id__pk
-                primary key,
-        full_name varchar not null,
-        email     varchar not null
-            constraint u__email__uk
-                unique
-    );
-    """)
+               create table python_fastapi_v01.auth.user
+               (
+                   id        uuid,
+                   full_name varchar not null,
+                   email     varchar not null,
+                   password_hash varchar not null,
+                   constraint u__id__pk primary key (id),
+                   constraint u__email__uk unique (email),
+                   constraint u_password_hash__uk unique (password_hash)
+               );
+               """)
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.execute("""
-    drop schema auth;
-    """)
+    op.execute("drop schema auth;")
