@@ -15,6 +15,7 @@ class PythonFastapiV01:
         "**/.gitignore",
         ".idea",
         ".ruff_cache",
+        ".env",
     ]
 
     SourceDir = Annotated[
@@ -161,14 +162,25 @@ class PythonFastapiV01:
             .as_service()
         )
 
-        api_container = (
-            await self.build_env(source)
-            .with_service_binding("db", postgres_container)
-            .with_env_variable("DATABASE__MAIN_CONNECTION__HOST", "db")
-            .with_exposed_port(8000)
-            .with_entrypoint(["fastapi", "run", "/project/src/main.py"])
-            .as_service()
-        )
+        async def build_api_container() -> dagger.Service:
+            env = {"DATABASE__MAIN_CONNECTION__HOST": "db"}
+
+            api_container_ = (
+                await self.build_env(source)
+                .with_service_binding("db", postgres_container)
+                .with_exposed_port(8000)
+            )
+
+            for key, value in env.items():
+                api_container_ = api_container_.with_env_variable(key, value)
+
+            api_container_ = api_container_.with_entrypoint(
+                ["fastapi", "run", "/project/src/main.py"]
+            ).as_service()
+
+            return api_container_
+
+        api_container = await build_api_container()
 
         return (
             await self.build_env(source, development=True)
