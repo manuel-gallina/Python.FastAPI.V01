@@ -77,7 +77,7 @@ class PythonFastapiV01:
             .with_workdir(self.PROJECT_PATH)
             .with_mounted_cache("/root/.cache/uv", dag.cache_volume("uv-cache"))
         )
-        sync_cmd = ["uv", "sync"]
+        sync_cmd = ["uv", "sync", "--locked"]
         if not development:
             sync_cmd.append("--no-dev")
         builder = builder.with_exec(sync_cmd)
