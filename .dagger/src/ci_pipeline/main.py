@@ -152,46 +152,67 @@ class PythonFastapiV01:
         Returns:
             str: The output of the pytest command.
         """
-        postgres_container = (
-            dag.container()
-            .from_("postgres:18")
-            .with_env_variable("POSTGRES_USER", "admin")
-            .with_env_variable("POSTGRES_PASSWORD", "admin")
-            .with_env_variable("POSTGRES_DB", "python_fastapi_v01")
+
+        def with_env_variables(
+            container: dagger.Container, env_vars: dict[str, str]
+        ) -> dagger.Container:
+            for key, value in env_vars.items():
+                container = container.with_env_variable(key, value)
+            return container
+
+        main_db_container = (
+            with_env_variables(
+                dag.container().from_("postgres:18"),
+                {
+                    "POSTGRES_USER": "admin",
+                    "POSTGRES_PASSWORD": "admin",
+                    "POSTGRES_DB": "python_fastapi_v01",
+                },
+            )
             .with_exposed_port(5432)
             .as_service()
         )
 
-        async def build_api_container() -> dagger.Service:
-            env = {"DATABASE__MAIN_CONNECTION__HOST": "db"}
-
-            api_container_ = (
-                await self.build_env(source)
-                .with_service_binding("db", postgres_container)
-                .with_exposed_port(8000)
+        api_container = (
+            with_env_variables(
+                self.build_env(source),
+                {
+                    "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
+                    "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
+                    "DATABASE__MAIN_CONNECTION__HOST": "main_db",
+                    "DATABASE__MAIN_CONNECTION__PORT": "5432",
+                    "DATABASE__MAIN_CONNECTION__USER": "admin",
+                    "DATABASE__MAIN_CONNECTION__PASSWORD": "admin",
+                    "DATABASE__MAIN_CONNECTION__NAME": "python_fastapi_v01",
+                },
             )
+            .with_service_binding("main_db", main_db_container)
+            .with_exposed_port(8000)
+            .with_entrypoint(["fastapi", "run", "/project/src/main.py"])
+            .as_service()
+        )
 
-            for key, value in env.items():
-                api_container_ = api_container_.with_env_variable(key, value)
-
-            api_container_ = api_container_.with_entrypoint(
-                ["fastapi", "run", "/project/src/main.py"]
-            ).as_service()
-
-            return api_container_
-
-        api_container = await build_api_container()
-
-        return (
-            await self.build_env(source, development=True)
-            .with_service_binding("db", postgres_container)
-            .with_env_variable("DATABASE__MAIN_CONNECTION__HOST", "db")
+        test_container = (
+            with_env_variables(
+                self.build_env(source, development=True),
+                {
+                    "TEST_API_BASE_URL": "http://api:8000",
+                    "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
+                    "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
+                    "DATABASE__MAIN_CONNECTION__HOST": "main_db",
+                    "DATABASE__MAIN_CONNECTION__PORT": "5432",
+                    "DATABASE__MAIN_CONNECTION__USER": "admin",
+                    "DATABASE__MAIN_CONNECTION__PASSWORD": "admin",
+                    "DATABASE__MAIN_CONNECTION__NAME": "python_fastapi_v01",
+                },
+            )
+            .with_service_binding("main_db", main_db_container)
             .with_service_binding("api", api_container)
-            .with_env_variable("TEST_API_BASE_URL", "http://api:8000")
             .with_exec(["alembic", "--name", "main", "upgrade", "head"])
             .with_exec(["pytest", "-v", "tests/acceptance_tests"])
-            .stdout()
         )
+
+        return await test_container.stdout()
 
     @function
     async def test(self, source: TestSourceDir) -> str:
