@@ -11,7 +11,7 @@ from api.server_info.schemas import (
     SubsystemsInfoSchema,
 )
 from api.shared.schemas.responses import ObjectResponseSchema
-from api.shared.system.datetimes import current_datetime
+from api.shared.system.datetimes import DatetimeProvider
 from api.shared.system.settings import Settings, get_settings
 
 logger = logging.getLogger(__name__)
@@ -30,6 +30,7 @@ router = APIRouter(prefix="/server-info")
 async def get_server_info(
     settings: Settings = Depends(get_settings),
     main_db_info: DatabaseInfoSchema = Depends(MainDbInfoRepository.get),
+    datetime_provider: DatetimeProvider = Depends(),
 ):
     """
     Endpoint to retrieve server information, including version, current datetime and subsystems info.
@@ -38,7 +39,7 @@ async def get_server_info(
         ObjectResponseSchema(
             data=GetServerInfoResponseSchema(
                 server_version=settings.project.version,
-                current_datetime=current_datetime(),
+                current_datetime=datetime_provider.now(),
                 subsystems=SubsystemsInfoSchema(main_db=main_db_info),
             )
         ).model_dump()

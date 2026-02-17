@@ -5,9 +5,28 @@ import dagger
 from dagger import DefaultPath, Doc, Ignore, dag, function, object_type
 
 
+class Utils:
+    @staticmethod
+    def with_env_variables(
+        container: dagger.Container, env_vars: dict[str, str]
+    ) -> dagger.Container:
+        for key, value in env_vars.items():
+            container = container.with_env_variable(key, value)
+        return container
+
+
 @object_type
 class PythonFastapiV01:
     PROJECT_PATH = "/project"
+    DEFAULT_ENV_VARS = {
+        "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
+        "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
+        "DATABASE__MAIN_CONNECTION__HOST": "UNSET",
+        "DATABASE__MAIN_CONNECTION__PORT": "0",
+        "DATABASE__MAIN_CONNECTION__USER": "UNSET",
+        "DATABASE__MAIN_CONNECTION__PASSWORD": "UNSET",
+        "DATABASE__MAIN_CONNECTION__NAME": "UNSET",
+    }
     BASE_IGNORES = [
         "**/.venv",
         "**/__pycache__",
@@ -15,6 +34,7 @@ class PythonFastapiV01:
         "**/.gitignore",
         ".idea",
         ".ruff_cache",
+        ".env",
     ]
 
     SourceDir = Annotated[
@@ -107,9 +127,9 @@ class PythonFastapiV01:
         return runner
 
     @function
-    async def test(self, source: TestSourceDir) -> str:
+    async def test_unit(self, source: TestSourceDir) -> str:
         """
-        Runs the tests using pytest.
+        Runs the unit tests using pytest.
 
         Args:
             source (TestSourceDir): The project source directory.
@@ -117,10 +137,116 @@ class PythonFastapiV01:
         Returns:
             str: The output of the pytest command.
         """
-        return (
-            await self.build_env(source, development=True)
-            .with_exec(["pytest"])
-            .stdout()
+        test_container = Utils.with_env_variables(
+            self.build_env(source, development=True), self.DEFAULT_ENV_VARS
+        ).with_exec(["pytest", "tests/unit_tests"])
+        return await test_container.stdout()
+
+    @function
+    async def test_integration(self, source: TestSourceDir) -> str:
+        """
+        Runs the integration tests using pytest.
+
+        Args:
+            source (TestSourceDir): The project source directory.
+
+        Returns:
+            str: The output of the pytest command.
+        """
+        test_container = Utils.with_env_variables(
+            self.build_env(source, development=True), self.DEFAULT_ENV_VARS
+        ).with_exec(["pytest", "tests/integration_tests"])
+        return await test_container.stdout()
+
+    @function
+    async def test_acceptance(self, source: TestSourceDir) -> str:
+        """
+        Runs the acceptance tests using pytest.
+
+        Args:
+            source (TestSourceDir): The project source directory.
+
+        Returns:
+            str: The output of the pytest command.
+        """
+        main_db_container = (
+            Utils.with_env_variables(
+                dag.container().from_("postgres:18"),
+                {
+                    "POSTGRES_USER": "admin",
+                    "POSTGRES_PASSWORD": "admin",
+                    "POSTGRES_DB": "python_fastapi_v01",
+                },
+            )
+            .with_exposed_port(5432)
+            .as_service()
+        )
+
+        api_container = (
+            Utils.with_env_variables(
+                self.build_env(source),
+                {
+                    "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
+                    "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
+                    "DATABASE__MAIN_CONNECTION__HOST": "main_db",
+                    "DATABASE__MAIN_CONNECTION__PORT": "5432",
+                    "DATABASE__MAIN_CONNECTION__USER": "admin",
+                    "DATABASE__MAIN_CONNECTION__PASSWORD": "admin",
+                    "DATABASE__MAIN_CONNECTION__NAME": "python_fastapi_v01",
+                },
+            )
+            .with_service_binding("main_db", main_db_container)
+            .with_exposed_port(8000)
+            .with_entrypoint(["fastapi", "run", "/project/src/main.py"])
+            .as_service()
+        )
+
+        test_container = (
+            Utils.with_env_variables(
+                self.build_env(source, development=True),
+                {
+                    "TEST_API_BASE_URL": "http://api:8000",
+                    "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
+                    "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
+                    "DATABASE__MAIN_CONNECTION__HOST": "main_db",
+                    "DATABASE__MAIN_CONNECTION__PORT": "5432",
+                    "DATABASE__MAIN_CONNECTION__USER": "admin",
+                    "DATABASE__MAIN_CONNECTION__PASSWORD": "admin",
+                    "DATABASE__MAIN_CONNECTION__NAME": "python_fastapi_v01",
+                },
+            )
+            .with_service_binding("main_db", main_db_container)
+            .with_service_binding("api", api_container)
+            .with_exec(["alembic", "--name", "main", "upgrade", "head"])
+            .with_exec(["pytest", "-v", "tests/acceptance_tests"])
+        )
+
+        return await test_container.stdout()
+
+    @function
+    async def test(self, source: TestSourceDir) -> str:
+        """
+        Runs all levels tests using pytest.
+
+        Args:
+            source (TestSourceDir): The project source directory.
+
+        Returns:
+            str: The output of the three pytest commands.
+        """
+        unit_tests_output = await self.test_unit(source)
+        integration_tests_output = await self.test_integration(source)
+        acceptance_tests_output = await self.test_acceptance(source)
+
+        return "\n".join(
+            [
+                "Unit Tests Output:",
+                unit_tests_output,
+                "Integration Tests Output:",
+                integration_tests_output,
+                "Acceptance Tests Output:",
+                acceptance_tests_output,
+            ]
         )
 
     @function
@@ -174,6 +300,9 @@ class PythonFastapiV01:
         Returns:
             list[str]: A list of published image tags.
         """
+        # TODO: username is used both for authentication and as part of the image path
+        #   we should separate these two concepts and allow for a different image path
+        #   or derive the image path from the username.
         pyproject_toml = await source.file("pyproject.toml").contents()
         project_version = tomllib.loads(pyproject_toml)["project"]["version"]
 

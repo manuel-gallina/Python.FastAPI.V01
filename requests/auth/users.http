@@ -1,0 +1,2 @@
+### GET users
+GET {{host}}/api/auth/users

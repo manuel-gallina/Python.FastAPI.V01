@@ -19,5 +19,14 @@ CI/CD pipeline is implemented using Dagger.
 ### Examples of Dagger calls
 
 - Run tests<br>`dagger call test`
-- Publish Docker image<br>`dagger call publish-docker-image --token cmd://"op read op://employee/github/password"`
+- Publish Docker image<br>
+  `dagger call publish-docker-image --token cmd://"op read op://employee/github/dagger/password"`
 - Export OpenAPI schema<br>`dagger call export-openapi-schema -o .`
+
+## Databases
+
+Because databases are usually managed externally, all the schema definitions and migrations that
+are implemented in this project are meant to be used for autocompletion during development
+and to set up testing databases.
+
+For production, the database schema should be managed with dedicated tools.

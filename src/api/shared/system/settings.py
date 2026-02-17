@@ -1,5 +1,5 @@
 from anyio.functools import lru_cache
-from pydantic import BaseModel, SecretStr, computed_field
+from pydantic import BaseModel, SecretStr
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
