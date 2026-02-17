@@ -172,8 +172,11 @@ class PythonFastapiV01:
 
         return (
             await self.build_env(source, development=True)
-            .with_env_variable("TEST_API_BASE_URL", "http://api:8000")
+            .with_service_binding("db", postgres_container)
+            .with_env_variable("DATABASE__MAIN_CONNECTION__HOST", "db")
             .with_service_binding("api", api_container)
+            .with_env_variable("TEST_API_BASE_URL", "http://api:8000")
+            .with_exec(["alembic", "--name", "main", "upgrade", "head"])
             .with_exec(["pytest", "-v", "tests/acceptance_tests"])
             .stdout()
         )
