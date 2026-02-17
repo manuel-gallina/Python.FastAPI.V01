@@ -5,9 +5,28 @@ import dagger
 from dagger import DefaultPath, Doc, Ignore, dag, function, object_type
 
 
+class Utils:
+    @staticmethod
+    def with_env_variables(
+        container: dagger.Container, env_vars: dict[str, str]
+    ) -> dagger.Container:
+        for key, value in env_vars.items():
+            container = container.with_env_variable(key, value)
+        return container
+
+
 @object_type
 class PythonFastapiV01:
     PROJECT_PATH = "/project"
+    DEFAULT_ENV_VARS = {
+        "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
+        "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
+        "DATABASE__MAIN_CONNECTION__HOST": "UNSET",
+        "DATABASE__MAIN_CONNECTION__PORT": "0",
+        "DATABASE__MAIN_CONNECTION__USER": "UNSET",
+        "DATABASE__MAIN_CONNECTION__PASSWORD": "UNSET",
+        "DATABASE__MAIN_CONNECTION__NAME": "UNSET",
+    }
     BASE_IGNORES = [
         "**/.venv",
         "**/__pycache__",
@@ -118,11 +137,10 @@ class PythonFastapiV01:
         Returns:
             str: The output of the pytest command.
         """
-        return (
-            await self.build_env(source, development=True)
-            .with_exec(["pytest", "tests/unit_tests"])
-            .stdout()
-        )
+        test_container = Utils.with_env_variables(
+            self.build_env(source, development=True), self.DEFAULT_ENV_VARS
+        ).with_exec(["pytest", "tests/unit_tests"])
+        return await test_container.stdout()
 
     @function
     async def test_integration(self, source: TestSourceDir) -> str:
@@ -135,11 +153,10 @@ class PythonFastapiV01:
         Returns:
             str: The output of the pytest command.
         """
-        return (
-            await self.build_env(source, development=True)
-            .with_exec(["pytest", "tests/integration_tests"])
-            .stdout()
-        )
+        test_container = Utils.with_env_variables(
+            self.build_env(source, development=True), self.DEFAULT_ENV_VARS
+        ).with_exec(["pytest", "tests/integration_tests"])
+        return await test_container.stdout()
 
     @function
     async def test_acceptance(self, source: TestSourceDir) -> str:
@@ -152,16 +169,8 @@ class PythonFastapiV01:
         Returns:
             str: The output of the pytest command.
         """
-
-        def with_env_variables(
-            container: dagger.Container, env_vars: dict[str, str]
-        ) -> dagger.Container:
-            for key, value in env_vars.items():
-                container = container.with_env_variable(key, value)
-            return container
-
         main_db_container = (
-            with_env_variables(
+            Utils.with_env_variables(
                 dag.container().from_("postgres:18"),
                 {
                     "POSTGRES_USER": "admin",
@@ -174,7 +183,7 @@ class PythonFastapiV01:
         )
 
         api_container = (
-            with_env_variables(
+            Utils.with_env_variables(
                 self.build_env(source),
                 {
                     "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
@@ -193,7 +202,7 @@ class PythonFastapiV01:
         )
 
         test_container = (
-            with_env_variables(
+            Utils.with_env_variables(
                 self.build_env(source, development=True),
                 {
                     "TEST_API_BASE_URL": "http://api:8000",
