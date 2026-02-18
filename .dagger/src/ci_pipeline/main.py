@@ -271,11 +271,11 @@ class PythonFastapiV01:
 
     @function
     async def export_openapi_schema(self, source: SourceDir) -> dagger.Directory:
-        """
-        Exports the OpenAPI schema to a file.
+        """Exports the OpenAPI schema to a file.
 
-        When calling this Dagger function ensure to specify the -o, --output option, otherwise the output will
-        be lost as the directory is created inside the container.
+        When calling this Dagger function ensure to specify the -o, --output option,
+        otherwise the output will be lost as the directory is created
+        inside the container.
 
         E.g. dagger call export-openapi-schema -o .
 
@@ -310,8 +310,7 @@ class PythonFastapiV01:
         registry: Annotated[str, Doc("registry url")] = "ghcr.io",
         username: Annotated[str, Doc("registry username")] = "manuel-gallina",
     ) -> list[str]:
-        """
-        Publish the Docker image to the specified registry.
+        """Publish the Docker image to the specified registry.
 
         Args:
             source (SourceDir): The project source directory.
@@ -338,3 +337,18 @@ class PythonFastapiV01:
             )
 
         return published_tags
+
+    @function
+    async def check_style(self, source: TestSourceDir) -> str:
+        """Checks the code style using ruff.
+
+        Args:
+            source (TestSourceDir): The project source directory.
+
+        Returns:
+            str: The output of the ruff command.
+        """
+        style_container = Utils.with_env_variables(
+            self.build_env(source, development=True), self.DEFAULT_ENV_VARS
+        ).with_exec(["ruff", "check", "."])
+        return await style_container.stdout()
