@@ -1,3 +1,9 @@
+"""
+CI pipeline for the Python FastAPI project.
+
+This module defines a Dagger CI pipeline for the project.
+"""
+
 import tomllib
 from typing import Annotated
 
@@ -6,10 +12,24 @@ from dagger import DefaultPath, Doc, Ignore, dag, function, object_type
 
 
 class Utils:
+    """
+    Utility functions for the CI pipeline.
+    """
+
     @staticmethod
     def with_env_variables(
         container: dagger.Container, env_vars: dict[str, str]
     ) -> dagger.Container:
+        """
+        Writes the provided environment variables into the container.
+
+        Args:
+            container (dagger.Container): The container to which the environment variables will be added.
+            env_vars (dict[str, str]): A dictionary of environment variable names and their corresponding values.
+
+        Returns:
+            dagger.Container: The container with the added environment variables.
+        """
         for key, value in env_vars.items():
             container = container.with_env_variable(key, value)
         return container
@@ -267,7 +287,9 @@ class PythonFastapiV01:
         """
         openapi_schema_path = "./docs/openapi.yaml"
         openapi_schema_file = (
-            await self.build_env(source, development=True)
+            await Utils.with_env_variables(
+                self.build_env(source, development=True), self.DEFAULT_ENV_VARS
+            )
             .with_workdir(self.PROJECT_PATH)
             .with_exec(
                 [

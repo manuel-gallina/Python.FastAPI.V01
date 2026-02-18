@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: FastAPI Template V1
   description: Template project for FastAPI applications.
-  version: 0.1.0-dev.0
+  version: 0.1.0-dev.1
   x-logo:
     url: ./logo/logo.png
     altText: Logo
@@ -20,6 +20,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ObjectResponseSchema_GetServerInfoResponseSchema_'
+  /api/auth/users:
+    get:
+      summary: Get All
+      operationId: get_all_api_auth_users_get
+      responses:
+        '200':
+          description: List of users retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponseSchema_GetAllUsersResponseSchema_'
 components:
   schemas:
     DatabaseInfoSchema:
@@ -37,6 +48,24 @@ components:
       required:
       - status
       title: DatabaseInfoSchema
+    GetAllUsersResponseSchema:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        fullName:
+          type: string
+          title: Fullname
+        email:
+          type: string
+          title: Email
+      type: object
+      required:
+      - id
+      - fullName
+      - email
+      title: GetAllUsersResponseSchema
     GetServerInfoResponseSchema:
       properties:
         serverVersion:
@@ -56,6 +85,29 @@ components:
       - currentDatetime
       - subsystems
       title: GetServerInfoResponseSchema
+    ListResponseSchema_GetAllUsersResponseSchema_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/GetAllUsersResponseSchema'
+          type: array
+          title: Data
+        meta:
+          $ref: '#/components/schemas/MetaSchema'
+      type: object
+      required:
+      - data
+      - meta
+      title: ListResponseSchema[GetAllUsersResponseSchema]
+    MetaSchema:
+      properties:
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - count
+      title: MetaSchema
     ObjectResponseSchema_GetServerInfoResponseSchema_:
       properties:
         data:
