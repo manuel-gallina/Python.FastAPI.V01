@@ -21,5 +21,9 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
+  plantuml:
+    image: plantuml/plantuml-server:jetty
+    ports:
+      - "9102:8080"
 volumes:
   postgres_data:

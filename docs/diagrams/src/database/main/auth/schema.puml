@@ -1,0 +1,13 @@
+@startuml Main database - auth schema 
+
+!procedure $USER()
+    entity auth.user {
+        # id: uuid <<PK>>
+        ---
+        full_name: varchar
+        email: varchar <<K1>>
+        password_hash: varchar <<K2>>
+    }
+!endprocedure
+
+@enduml

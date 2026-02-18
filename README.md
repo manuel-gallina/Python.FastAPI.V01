@@ -30,3 +30,16 @@ are implemented in this project are meant to be used for autocompletion during d
 and to set up testing databases.
 
 For production, the database schema should be managed with dedicated tools.
+
+## Docs
+
+### Diagrams
+
+Diagrams are implemented with PlantUML, and are located under the `docs/diagrams` folder.
+To edit and generate diagrams, you should use the PlantUML extension for
+VSCode (see the [marketplace page](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml)),
+which allows you to edit and generate diagrams directly from the editor.
+
+# More
+
+For further details, see the [docs page](./docs/index.md).
