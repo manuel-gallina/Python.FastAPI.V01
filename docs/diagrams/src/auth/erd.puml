@@ -1,0 +1,12 @@
+@startuml components-sync
+
+!include ../shared/generic.puml
+!include ../shared/erd.puml
+!include ../database/main/auth/schema.puml
+
+$GENERIC_FOOTER("Auth - ERD")
+$ERD_LEGEND()
+
+$USER()
+
+hide empty members

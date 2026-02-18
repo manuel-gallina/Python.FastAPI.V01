@@ -1,0 +1,11 @@
+@startuml erd
+
+!procedure $ERD_LEGEND()
+    legend right
+        | PK | Primary Key |
+        | FKn | Foreign Key |
+        | Kn | Key |
+    end legend
+!endprocedure
+
+@enduml

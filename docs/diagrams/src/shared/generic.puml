@@ -1,0 +1,9 @@
+@startuml general
+
+!procedure $GENERIC_FOOTER($text)
+  left footer
+    (%date("yyyy-MM-dd HH:mm z")) FastAPI Template V1 - $text
+  endfooter
+!endprocedure
+
+@enduml
