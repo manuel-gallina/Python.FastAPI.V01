@@ -44,7 +44,7 @@ select = [
 ignore = [
     "S101",
     "S608",
-    "D104",
+    #"D104",
 ]
 
 [lint.pydocstyle]
