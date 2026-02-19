@@ -33,8 +33,7 @@ async def get_all(
         all_users_count (int): The total count of users in the database.
 
     Returns:
-        ListResponseSchema[GetAllUsersResponseSchema]: A response schema containing
-            the list of users and metadata.
+        ORJSONResponse: A response schema containing the list of users and metadata.
     """
     return ORJSONResponse(
         ListResponseSchema(
@@ -45,5 +44,5 @@ async def get_all(
                 for user in all_users
             ],
             meta=ListResponseSchema.MetaSchema(count=all_users_count),
-        ).model_dump()
+        ).model_dump(mode="json")
     )

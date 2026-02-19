@@ -56,5 +56,5 @@ async def get_server_info(
                 current_datetime=datetime_provider.now(),
                 subsystems=SubsystemsInfoSchema(main_db=main_db_info),
             )
-        ).model_dump()
+        ).model_dump(mode="json")
     )
