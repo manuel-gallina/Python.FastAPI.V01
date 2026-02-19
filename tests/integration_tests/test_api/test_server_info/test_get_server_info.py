@@ -1,17 +1,26 @@
-from fastapi import status
-from httpx import AsyncClient
-from testing_utils.datetimes import DEFAULT_CURRENT_DATETIME_MOCK, MockDatetimeProvider
+"""Integration tests for the /api/server-info endpoint."""
 
 from api.server_info.repositories import MainDbInfoRepository
 from api.server_info.schemas import DatabaseInfoSchema, ServerStatus
 from api.shared.system.datetimes import DatetimeProvider
 from api.shared.system.settings import Settings, get_settings
+from fastapi import status
+from httpx import AsyncClient
 from main import app
+
+from testing_utils.datetimes import DEFAULT_CURRENT_DATETIME_MOCK, MockDatetimeProvider
 
 _ENDPOINT = "/api/server-info"
 
 
-async def test_success(http_test_client: AsyncClient):
+async def test_success(http_test_client: AsyncClient) -> None:
+    """Test the /api/server-info endpoint for a successful response.
+
+    Args:
+        http_test_client (AsyncClient): An asynchronous HTTP client
+            for making requests to the API.
+    """
+
     async def mock_main_db_info_repository_get() -> DatabaseInfoSchema:
         return DatabaseInfoSchema(status=ServerStatus.OK, version="PostgreSQL 18")
 

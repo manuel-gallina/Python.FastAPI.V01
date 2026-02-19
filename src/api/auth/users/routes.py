@@ -1,8 +1,9 @@
-"""Module to define the API routes for user-related operations."""
+"""API routes for user-related operations."""
 
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import ORJSONResponse
 
 from api.auth.users.models import User
 from api.auth.users.repositories import UsersRepository
@@ -24,8 +25,8 @@ router = APIRouter(prefix="/users")
 async def get_all(
     all_users: Annotated[list[User], Depends(UsersRepository.get_all)],
     all_users_count: Annotated[int, Depends(UsersRepository.count_all)],
-) -> ListResponseSchema[GetAllUsersResponseSchema]:
-    """Fetch all users from the database.
+) -> ORJSONResponse:
+    """Get the list of all users.
 
     Args:
         all_users (list[User]): A list of User objects retrieved from the database.
@@ -33,14 +34,16 @@ async def get_all(
 
     Returns:
         ListResponseSchema[GetAllUsersResponseSchema]: A response schema containing
-        the list of users and metadata.
+            the list of users and metadata.
     """
-    return ListResponseSchema(
-        data=[
-            GetAllUsersResponseSchema(
-                id=user.id, full_name=user.full_name, email=user.email
-            )
-            for user in all_users
-        ],
-        meta=ListResponseSchema.MetaSchema(count=all_users_count),
+    return ORJSONResponse(
+        ListResponseSchema(
+            data=[
+                GetAllUsersResponseSchema(
+                    id=user.id, full_name=user.full_name, email=user.email
+                )
+                for user in all_users
+            ],
+            meta=ListResponseSchema.MetaSchema(count=all_users_count),
+        ).model_dump()
     )

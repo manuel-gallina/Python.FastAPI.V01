@@ -1,4 +1,7 @@
+"""Repository for retrieving information about the main database and server status."""
+
 import logging
+from typing import Annotated
 
 from fastapi import Depends
 from sqlalchemy import text
@@ -11,22 +14,21 @@ logger = logging.getLogger(__name__)
 
 
 class MainDbInfoRepository:
-    """
-    Repository for retrieving information about the main database.
-    """
+    """Repository for retrieving information about the main database."""
 
     @staticmethod
     async def get(
-        main_async_db_engine: AsyncEngine = Depends(get_main_async_db_engine),
+        main_async_db_engine: Annotated[AsyncEngine, Depends(get_main_async_db_engine)],
     ) -> DatabaseInfoSchema:
-        """
-        Retrieve information about the main database, including its status and version.
+        """Fetch information about the main database, including its status and version.
 
         Args:
-            main_async_db_engine (AsyncEngine): The asynchronous database engine for the main database.
+            main_async_db_engine (AsyncEngine): The asynchronous database engine
+                for the main database.
 
         Returns:
-            DatabaseInfoSchema: An object containing the status and version of the main database.
+            DatabaseInfoSchema: An object containing the status and version
+                of the main database.
 
         """
         main_db_info = DatabaseInfoSchema(status=ServerStatus.OK, version=None)

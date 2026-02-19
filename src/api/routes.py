@@ -1,5 +1,5 @@
-"""
-This module defines the main API router.
+"""Main API router.
+
 It imports and includes all the necessary routers for the different endpoint modules.
 """
 

@@ -1,3 +1,5 @@
+"""Application settings."""
+
 from anyio.functools import lru_cache
 from pydantic import BaseModel, SecretStr
 from pydantic_settings import (
@@ -44,8 +46,7 @@ class DatabaseSettings(BaseModel):
 
 
 class ProjectSettings(BaseModel):
-    """
-    Project settings.
+    """Project settings.
 
     This is intended to be loaded from the pyproject.toml file.
     """
@@ -72,7 +73,7 @@ class Settings(BaseSettings):
     )
 
     @classmethod
-    def settings_customise_sources(
+    def settings_customise_sources(  # noqa: D102
         cls,
         settings_cls: type[BaseSettings],
         init_settings: PydanticBaseSettingsSource,

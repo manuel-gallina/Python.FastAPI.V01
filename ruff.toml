@@ -1,0 +1,54 @@
+extend-exclude = [
+    ".dagger/sdk",
+    "alembic"
+]
+
+[format]
+skip-magic-trailing-comma = true
+
+[lint]
+select = [
+    "A",
+    "ANN",
+    "ARG",
+    "ASYNC",
+    "B",
+    "BLE",
+    "C4",
+    "D",
+    "DTZ",
+    "E",
+    "EM",
+    "ERA",
+    "FAST",
+    "FBT",
+    "G",
+    "ICN",
+    "INP",
+    "ISC",
+    "LOG",
+    "N",
+    "PL",
+    "PT",
+    "Q",
+    "PIE",
+    "PTH",
+    "RET",
+    "RSE",
+    "RUF",
+    "S",
+    "SIM",
+    "SLF",
+    "T10",
+    "T20",
+    "TC",
+    "TD",
+    "TID",
+    "UP",
+    "W",
+    "YTT",
+    "D411",
+]
+
+[lint.pydocstyle]
+convention = "google"

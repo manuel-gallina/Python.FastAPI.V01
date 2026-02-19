@@ -1,5 +1,4 @@
-"""
-CI pipeline for the Python FastAPI project.
+"""CI pipeline for the Python FastAPI project.
 
 This module defines a Dagger CI pipeline for the project.
 """
@@ -12,20 +11,19 @@ from dagger import DefaultPath, Doc, Ignore, dag, function, object_type
 
 
 class Utils:
-    """
-    Utility functions for the CI pipeline.
-    """
+    """Utility functions for the CI pipeline."""
 
     @staticmethod
     def with_env_variables(
         container: dagger.Container, env_vars: dict[str, str]
     ) -> dagger.Container:
-        """
-        Writes the provided environment variables into the container.
+        """Writes the provided environment variables into the container.
 
         Args:
-            container (dagger.Container): The container to which the environment variables will be added.
-            env_vars (dict[str, str]): A dictionary of environment variable names and their corresponding values.
+            container (dagger.Container): The container to which the environment
+                variables will be added.
+            env_vars (dict[str, str]): A dictionary of environment variable names
+                and their corresponding values.
 
         Returns:
             dagger.Container: The container with the added environment variables.
@@ -35,33 +33,36 @@ class Utils:
         return container
 
 
+PROJECT_PATH = "/project"
+DEFAULT_ENV_VARS = {
+    "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
+    "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
+    "DATABASE__MAIN_CONNECTION__HOST": "UNSET",
+    "DATABASE__MAIN_CONNECTION__PORT": "0",
+    "DATABASE__MAIN_CONNECTION__USER": "UNSET",
+    "DATABASE__MAIN_CONNECTION__PASSWORD": "UNSET",
+    "DATABASE__MAIN_CONNECTION__NAME": "UNSET",
+}
+BASE_IGNORES = [
+    "**/.venv",
+    "**/__pycache__",
+    ".git",
+    "**/.gitignore",
+    ".idea",
+    ".ruff_cache",
+    ".env",
+]
+
+
 @object_type
 class PythonFastapiV01:
-    PROJECT_PATH = "/project"
-    DEFAULT_ENV_VARS = {
-        "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
-        "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
-        "DATABASE__MAIN_CONNECTION__HOST": "UNSET",
-        "DATABASE__MAIN_CONNECTION__PORT": "0",
-        "DATABASE__MAIN_CONNECTION__USER": "UNSET",
-        "DATABASE__MAIN_CONNECTION__PASSWORD": "UNSET",
-        "DATABASE__MAIN_CONNECTION__NAME": "UNSET",
-    }
-    BASE_IGNORES = [
-        "**/.venv",
-        "**/__pycache__",
-        ".git",
-        "**/.gitignore",
-        ".idea",
-        ".ruff_cache",
-        ".env",
-    ]
+    """Dagger CI pipeline for the Python FastAPI project."""
 
     SourceDir = Annotated[
         dagger.Directory,
         DefaultPath("."),
         Doc("The project source directory"),
-        Ignore(BASE_IGNORES + ["tests/", ".pytest_cache"]),
+        Ignore([*BASE_IGNORES, "tests/", ".pytest_cache"]),
     ]
 
     TestSourceDir = Annotated[
@@ -75,14 +76,14 @@ class PythonFastapiV01:
     def build_env(
         self,
         source: SourceDir,
+        *,
         development: Annotated[bool, Doc("install development dependencies")] = False,
     ) -> dagger.Container:
-        """
-        Builds the container environment for the application.
+        """Builds the container environment for the application.
 
-        The build process is split into two stages: a builder stage where the dependencies are installed
-        and a runner stage where the application code and the installed dependencies are combined
-        to create the final container.
+        The build process is split into two stages: a builder stage where
+        the dependencies are installed and a runner stage where the application
+        code and the installed dependencies are combined to create the final container.
 
         Args:
             source (SourceDir): The project source directory.
@@ -113,8 +114,8 @@ class PythonFastapiV01:
             )
             .with_file(uv_path, uv_bin)
             .with_env_variable("UV_PROJECT_ENVIRONMENT", venv_path)
-            .with_directory(self.PROJECT_PATH, source)
-            .with_workdir(self.PROJECT_PATH)
+            .with_directory(PROJECT_PATH, source)
+            .with_workdir(PROJECT_PATH)
             .with_mounted_cache("/root/.cache/uv", dag.cache_volume("uv-cache"))
         )
         sync_cmd = ["uv", "sync", "--locked"]
@@ -126,17 +127,15 @@ class PythonFastapiV01:
         runner = (
             dag.container()
             .from_(base_image)
-            .with_directory(self.PROJECT_PATH, source)
-            .with_workdir(self.PROJECT_PATH)
+            .with_directory(PROJECT_PATH, source)
+            .with_workdir(PROJECT_PATH)
             .with_directory(venv_path, builder.directory(venv_path))
             .with_env_variable(
                 "PATH", ":".join([f"{venv_path}/bin", "$PATH"]), expand=True
             )
             .with_env_variable(
                 "PYTHONPATH",
-                ":".join(
-                    [self.PROJECT_PATH, f"{self.PROJECT_PATH}/src", "$PYTHONPATH"]
-                ),
+                ":".join([PROJECT_PATH, f"{PROJECT_PATH}/src", "$PYTHONPATH"]),
                 expand=True,
             )
             .with_env_variable("VIRTUAL_ENV", venv_path)
@@ -148,8 +147,7 @@ class PythonFastapiV01:
 
     @function
     async def test_unit(self, source: TestSourceDir) -> str:
-        """
-        Runs the unit tests using pytest.
+        """Runs the unit tests using pytest.
 
         Args:
             source (TestSourceDir): The project source directory.
@@ -158,14 +156,13 @@ class PythonFastapiV01:
             str: The output of the pytest command.
         """
         test_container = Utils.with_env_variables(
-            self.build_env(source, development=True), self.DEFAULT_ENV_VARS
+            self.build_env(source, development=True), DEFAULT_ENV_VARS
         ).with_exec(["pytest", "tests/unit_tests"])
         return await test_container.stdout()
 
     @function
     async def test_integration(self, source: TestSourceDir) -> str:
-        """
-        Runs the integration tests using pytest.
+        """Runs the integration tests using pytest.
 
         Args:
             source (TestSourceDir): The project source directory.
@@ -174,14 +171,13 @@ class PythonFastapiV01:
             str: The output of the pytest command.
         """
         test_container = Utils.with_env_variables(
-            self.build_env(source, development=True), self.DEFAULT_ENV_VARS
+            self.build_env(source, development=True), DEFAULT_ENV_VARS
         ).with_exec(["pytest", "tests/integration_tests"])
         return await test_container.stdout()
 
     @function
     async def test_acceptance(self, source: TestSourceDir) -> str:
-        """
-        Runs the acceptance tests using pytest.
+        """Runs the acceptance tests using pytest.
 
         Args:
             source (TestSourceDir): The project source directory.
@@ -245,8 +241,7 @@ class PythonFastapiV01:
 
     @function
     async def test(self, source: TestSourceDir) -> str:
-        """
-        Runs all levels tests using pytest.
+        """Runs all levels tests using pytest.
 
         Args:
             source (TestSourceDir): The project source directory.
@@ -288,14 +283,15 @@ class PythonFastapiV01:
         openapi_schema_path = "./docs/openapi.yaml"
         openapi_schema_file = (
             await Utils.with_env_variables(
-                self.build_env(source, development=True), self.DEFAULT_ENV_VARS
+                self.build_env(source, development=True), DEFAULT_ENV_VARS
             )
-            .with_workdir(self.PROJECT_PATH)
+            .with_workdir(PROJECT_PATH)
             .with_exec(
                 [
                     "python",
                     "-c",
-                    f"from utils.openapi import export_schema; export_schema('{openapi_schema_path}')",
+                    "from utils.openapi import export_schema; "
+                    f"export_schema('{openapi_schema_path}')",
                 ]
             )
             .file(openapi_schema_path)
@@ -321,9 +317,11 @@ class PythonFastapiV01:
         Returns:
             list[str]: A list of published image tags.
         """
-        # TODO: username is used both for authentication and as part of the image path
-        #   we should separate these two concepts and allow for a different image path
-        #   or derive the image path from the username.
+        # TODO(@manuel-gallina): username is used both for authentication
+        #   and as part of the image path we should separate these two concepts
+        #   and allow for a different image path or derive
+        #   the image path from the username.
+        #   https://github.com/manuel-gallina/Python.FastAPI.V01/issues/7
         pyproject_toml = await source.file("pyproject.toml").contents()
         project_version = tomllib.loads(pyproject_toml)["project"]["version"]
 
@@ -349,6 +347,6 @@ class PythonFastapiV01:
             str: The output of the ruff command.
         """
         style_container = Utils.with_env_variables(
-            self.build_env(source, development=True), self.DEFAULT_ENV_VARS
+            self.build_env(source, development=True), DEFAULT_ENV_VARS
         ).with_exec(["ruff", "check", "."])
         return await style_container.stdout()

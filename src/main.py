@@ -1,13 +1,13 @@
-"""
-Entry point for the FastAPI application.
+"""Entry point for the FastAPI application.
 
 This module defines the main entry point for the FastAPI application.
 It sets up the application, including its lifespan, middlewares and routes.
 """
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator
+from typing import Any
 
 from fastapi import FastAPI
 
@@ -22,8 +22,7 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI) -> AsyncGenerator[None, Any]:
-    """
-    Lifespan function for the FastAPI application.
+    """Lifespan function for the FastAPI application.
 
     This function is responsible for setting up resources when
     the application starts and cleaning them up when the application shuts down.

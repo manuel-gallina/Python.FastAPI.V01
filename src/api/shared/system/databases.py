@@ -1,3 +1,5 @@
+"""Functions for managing database connections and engines."""
+
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from starlette.requests import Request
 
@@ -5,8 +7,7 @@ from api.shared.system.settings import DatabaseConnection
 
 
 def get_async_db_engine(database_connection: DatabaseConnection) -> AsyncEngine:
-    """
-    Get an asynchronous database engine.
+    """Get an asynchronous database engine.
 
     Args:
         database_connection (DatabaseConnection): The database connection settings.
@@ -23,8 +24,7 @@ def get_async_db_engine(database_connection: DatabaseConnection) -> AsyncEngine:
 
 
 def get_main_async_db_engine(request: Request) -> AsyncEngine:
-    """
-    Get the main asynchronous database engine from the application state.
+    """Get the main asynchronous database engine from the application state.
 
     Args:
         request (Request): The FastAPI request object.
