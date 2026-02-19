@@ -1,0 +1,16 @@
+name: style.yml
+on:
+  pull_request:
+    branches: [ 'main' ]
+jobs:
+  style:
+    name: style
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Lint
+        uses: dagger/dagger-for-github@v8.3.0
+        with:
+          call: lint
+          enable-github-summary: 'true'

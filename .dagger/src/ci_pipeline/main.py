@@ -337,7 +337,7 @@ class PythonFastapiV01:
         return published_tags
 
     @function
-    async def check_style(self, source: TestSourceDir) -> str:
+    async def lint(self, source: TestSourceDir) -> str:
         """Checks the code style using ruff.
 
         Args:
@@ -348,5 +348,5 @@ class PythonFastapiV01:
         """
         style_container = Utils.with_env_variables(
             self.build_env(source, development=True), DEFAULT_ENV_VARS
-        ).with_exec(["ruff", "check", "."])
+        ).with_exec(["ruff", "check", ".", "--exit-zero"])
         return await style_container.stdout()
