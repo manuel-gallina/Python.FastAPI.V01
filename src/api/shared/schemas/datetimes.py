@@ -1,3 +1,5 @@
+"""Utility functions and types for handling datetime fields in API response models."""
+
 from datetime import datetime
 from typing import Annotated
 
@@ -5,8 +7,7 @@ from pydantic import PlainSerializer
 
 
 def serialize_datetime(dt: datetime) -> str:
-    """
-    Serialize a datetime object to an ISO 8601 string.
+    """Serialize a datetime object to an ISO 8601 string.
 
     Args:
         dt (datetime): The datetime object to serialize.
@@ -22,7 +23,7 @@ ApiDatetime = Annotated[
 ]
 """
     A datetime field that is serialized to an ISO 8601 string in JSON responses.
-    
+
     This type MUST be used for all datetime fields in API response models to ensure
     consistent serialization across the API.
 """

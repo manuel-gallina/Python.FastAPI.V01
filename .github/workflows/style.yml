@@ -1,0 +1,26 @@
+name: style.yml
+on:
+  pull_request:
+    branches: [ 'main' ]
+jobs:
+  style:
+    name: style
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install Dagger CLI
+        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
+      - name: Lint and format PR comment
+        run: |
+          echo "### Lint Results" > pr_comment.md
+          echo "\`\`\`text" >> pr_comment.md
+          dagger call lint >> pr_comment.md
+          echo "\`\`\`" >> pr_comment.md
+      - name: Write PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: ruff-lint-result
+          path: pr_comment.md

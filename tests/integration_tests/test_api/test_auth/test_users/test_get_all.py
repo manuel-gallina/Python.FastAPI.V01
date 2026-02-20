@@ -1,16 +1,23 @@
-from uuid import UUID
+"""Integration tests for the GET /api/auth/users endpoint."""
 
-from fastapi import status
-from httpx import AsyncClient
+from uuid import UUID
 
 from api.auth.users.models import User
 from api.auth.users.repositories import UsersRepository
+from fastapi import status
+from httpx import AsyncClient
 from main import app
 
 _ENDPOINT = "/api/auth/users"
 
 
-async def test_success(http_test_client: AsyncClient):
+async def test_success(http_test_client: AsyncClient) -> None:
+    """Test the GET /api/auth/users endpoint for a successful response.
+
+    Args:
+        http_test_client (AsyncClient): An asynchronous HTTP client
+            for making requests to the API.
+    """
     user_id = "94a9187d-197a-4160-8d9e-1634d2b42415"
 
     async def mock_users_repository_get_all() -> list[User]:
@@ -19,7 +26,7 @@ async def test_success(http_test_client: AsyncClient):
                 id=UUID(user_id),
                 full_name="John Doe",
                 email="john.doe@tmp.com",
-                password_hash="xyz",
+                password_hash="xyz",  # noqa: S106
             )
         ]
 

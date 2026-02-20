@@ -1,4 +1,7 @@
+"""API routes for retrieving server information."""
+
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, status
 from fastapi.params import Depends
@@ -28,12 +31,23 @@ router = APIRouter(prefix="/server-info")
     },
 )
 async def get_server_info(
-    settings: Settings = Depends(get_settings),
-    main_db_info: DatabaseInfoSchema = Depends(MainDbInfoRepository.get),
-    datetime_provider: DatetimeProvider = Depends(),
-):
-    """
-    Endpoint to retrieve server information, including version, current datetime and subsystems info.
+    settings: Annotated[Settings, Depends(get_settings)],
+    main_db_info: Annotated[DatabaseInfoSchema, Depends(MainDbInfoRepository.get)],
+    datetime_provider: Annotated[DatetimeProvider, Depends()],
+) -> ORJSONResponse:
+    """Get information about the server.
+
+    Information includes the server version, current datetime, and the status
+    of its subsystems.
+
+    Args:
+        settings (Settings): The application settings.
+        main_db_info (DatabaseInfoSchema): Information about the main database.
+        datetime_provider (DatetimeProvider): A provider for getting
+            the current datetime.
+
+    Returns:
+        ORJSONResponse: A JSON response containing the server information.
     """
     return ORJSONResponse(
         ObjectResponseSchema(
@@ -42,5 +56,5 @@ async def get_server_info(
                 current_datetime=datetime_provider.now(),
                 subsystems=SubsystemsInfoSchema(main_db=main_db_info),
             )
-        ).model_dump()
+        ).model_dump(mode="json")
     )

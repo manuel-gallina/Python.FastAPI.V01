@@ -1,4 +1,4 @@
-"""
-Package containing shared system-related code, such as database engines,
-utility functions, and settings management.
+"""Package containing shared system-related code.
+
+Examples include database engines, utility functions, and settings management.
 """

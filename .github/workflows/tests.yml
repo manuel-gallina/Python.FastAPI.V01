@@ -9,15 +9,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Install Dagger CLI
+        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
       - name: Unit tests
-        uses: dagger/dagger-for-github@v8.3.0
-        with:
-          call: test-unit
+        run: dagger call test-unit
       - name: Integration tests
-        uses: dagger/dagger-for-github@v8.3.0
-        with:
-          call: test-integration
+        run: dagger call test-integration
       - name: Acceptance tests
-        uses: dagger/dagger-for-github@v8.3.0
-        with:
-          call: test-acceptance
+        run: dagger call test-acceptance
