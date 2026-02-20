@@ -17,7 +17,7 @@ jobs:
         run: |
           echo "### Lint Results" > pr_comment.md
           echo "\`\`\`text" >> pr_comment.md
-          dagger call lint --source . >> pr_comment.md
+          dagger call lint >> pr_comment.md
           echo "\`\`\`" >> pr_comment.md
       - name: Write PR comment
         uses: marocchino/sticky-pull-request-comment@v2
