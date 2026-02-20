@@ -14,6 +14,6 @@ jobs:
       - name: Unit tests
         run: dagger call test-unit
       - name: Integration tests
-        run: test-integration
+        run: dagger call test-integration
       - name: Acceptance tests
-        run: test-acceptance
+        run: dagger call test-acceptance
