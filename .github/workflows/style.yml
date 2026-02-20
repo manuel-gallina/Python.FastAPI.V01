@@ -11,18 +11,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Lint
-        id: dagger_lint
-        uses: dagger/dagger-for-github@v8.3.0
-        with:
-          call: lint
-          args: '-o stdout.txt'
-      - name: Format PR Comment
+      - name: Install Dagger CLI
+        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo sh
+      - name: Lint and format PR comment
         run: |
           echo "### Lint Results" > pr_comment.md
           echo "\`\`\`text" >> pr_comment.md
-          cat stdout.txt >> pr_comment.md
-      - name: Write PR Comment
+          dagger call lint --source . >> pr_comment.md
+          echo "\`\`\`" >> pr_comment.md
+      - name: Write PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: ruff-lint-result
