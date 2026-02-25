@@ -11,9 +11,5 @@ jobs:
         uses: actions/checkout@v3
       - name: Install Dagger CLI
         run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
-      - name: Unit tests
-        run: dagger call test-unit
-      - name: Integration tests
-        run: dagger call test-integration
-      - name: Acceptance tests
-        run: dagger call test-acceptance
+      - name: Run tests
+        run: dagger call test
