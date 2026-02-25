@@ -29,17 +29,21 @@ ruff check .
 
 # Format
 ruff format .
+```
 
+> **Always run tests via Dagger** (not `pytest` directly) — it ensures the correct
+> environment and services are available.
+
+```sh
 # Run unit and integration tests locally (no external services needed)
-pytest tests/unit_tests
-pytest tests/integration_tests
+dagger call test-unit
+dagger call test-integration
 
-# Run a single test file
-pytest tests/unit_tests/test_main.py
+# Run acceptance tests (spins up PostgreSQL service automatically)
+dagger call test-acceptance
 
-# Run acceptance tests (requires a running PostgreSQL instance configured via .env)
-alembic --name main upgrade head
-pytest tests/acceptance_tests
+# Run all test levels
+dagger call test
 ```
 
 ## Dagger CI Pipeline
@@ -95,6 +99,22 @@ Three test levels with different fixture setups:
 - **Acceptance** (`tests/acceptance_tests/`): Connects to a real running API and database. The `clean_main_db` pytest fixture (autouse) truncates the `auth` schema tables before tests marked with `@pytest.mark.clean_main_db`. Base URL is configurable via `TEST_API_BASE_URL` env var (default: `http://localhost:9101`).
 
 Pytest is configured with `asyncio_mode = "auto"` — all async test functions run automatically without explicit markers.
+
+#### Integration test mocking
+
+FastAPI resolves **all** declared route dependencies before entering the handler, even if the handler would short-circuit early (e.g. raise 404). When using `app.dependency_overrides`, mock every dependency that touches the DB — including shared ones (e.g. `UsersRepository.get_by_id`) that appear both directly in the route and inside another dependency.
+
+#### Acceptance test DB verification
+
+Use `AsyncSession` to query the DB directly in acceptance tests:
+
+```python
+async with AsyncSession(main_async_db_engine) as session:
+    result = await session.execute(
+        text("select * from auth.user where id = :id"), {"id": user_id}
+    )
+    row = result.mappings().one_or_none()
+```
 
 ### Git commit messages
 
