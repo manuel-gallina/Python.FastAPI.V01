@@ -5,7 +5,8 @@ from uuid import uuid4
 import pytest
 from fastapi import status
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from testing_utils.databases import execute_queries
 
@@ -35,6 +36,14 @@ async def test_success(
     response = await http_client.delete(f"{_ENDPOINT}/{user_id}")
 
     assert response.status_code == status.HTTP_204_NO_CONTENT, response.text
+
+    async with AsyncSession(main_async_db_engine) as session:
+        result = await session.execute(
+            text("select * from auth.user where id = :id"), {"id": user_id}
+        )
+        row = result.mappings().one_or_none()
+
+    assert row is None
 
 
 @pytest.mark.clean_main_db
