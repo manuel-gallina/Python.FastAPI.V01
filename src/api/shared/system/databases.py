@@ -1,6 +1,10 @@
 """Functions for managing database connections and engines."""
 
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from collections.abc import AsyncGenerator
+from typing import Annotated
+
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from starlette.requests import Request
 
 from api.shared.system.settings import DatabaseConnection
@@ -33,3 +37,25 @@ def get_main_async_db_engine(request: Request) -> AsyncEngine:
         AsyncEngine: The main asynchronous database engine.
     """
     return request.app.state.main_async_db_engine
+
+
+async def get_request_main_async_db_session(
+    request: Request,
+    main_async_db_engine: Annotated[AsyncEngine, Depends(get_main_async_db_engine)],
+) -> AsyncSession:
+    """Get the main async database session linked to the current request.
+
+    Args:
+        request (Request): The FastAPI request object.
+        main_async_db_engine (AsyncEngine): The main asynchronous database engine.
+
+    Returns:
+        AsyncGenerator[AsyncSession, Any]: An asynchronous database session linked
+            to the current request.
+    """
+    if request.state.main_async_db_session is None:
+        session = AsyncSession(main_async_db_engine)
+        await session.begin()
+        request.state.main_async_db_session = session
+
+    return request.state.main_async_db_session
