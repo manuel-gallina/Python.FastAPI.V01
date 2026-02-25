@@ -1,5 +1,8 @@
 """Integration tests for the DELETE /api/auth/users/{user_id} endpoint."""
 
+from uuid import UUID
+
+from api.auth.users.models import User
 from api.auth.users.repositories import UsersRepository
 from fastapi import status
 from httpx import AsyncClient
@@ -17,10 +20,21 @@ async def test_success(http_test_client: AsyncClient) -> None:
     """
     user_id = "94a9187d-197a-4160-8d9e-1634d2b42415"
 
+    async def mock_get_by_id() -> User | None:
+        return User(
+            id=UUID(user_id),
+            full_name="Jane Doe",
+            email="jane.doe@tmp.com",
+            password_hash="xyz",  # noqa: S106
+        )
+
     async def mock_delete() -> bool:
         return True
 
-    app.dependency_overrides = {UsersRepository.delete: mock_delete}
+    app.dependency_overrides = {
+        UsersRepository.get_by_id: mock_get_by_id,
+        UsersRepository.delete: mock_delete,
+    }
 
     response = await http_test_client.delete(f"{_ENDPOINT}/{user_id}")
 
@@ -36,10 +50,16 @@ async def test_not_found(http_test_client: AsyncClient) -> None:
     """
     user_id = "94a9187d-197a-4160-8d9e-1634d2b42415"
 
+    async def mock_get_by_id() -> User | None:
+        return None
+
     async def mock_delete() -> bool:
         return False
 
-    app.dependency_overrides = {UsersRepository.delete: mock_delete}
+    app.dependency_overrides = {
+        UsersRepository.get_by_id: mock_get_by_id,
+        UsersRepository.delete: mock_delete,
+    }
 
     response = await http_test_client.delete(f"{_ENDPOINT}/{user_id}")
 

@@ -20,6 +20,14 @@ async def test_success(http_test_client: AsyncClient) -> None:
     """
     user_id = "94a9187d-197a-4160-8d9e-1634d2b42415"
 
+    async def mock_get_by_id() -> User | None:
+        return User(
+            id=UUID(user_id),
+            full_name="Jane Doe",
+            email="jane.doe@tmp.com",
+            password_hash="xyz",  # noqa: S106
+        )
+
     async def mock_update() -> User | None:
         return User(
             id=UUID(user_id),
@@ -28,7 +36,10 @@ async def test_success(http_test_client: AsyncClient) -> None:
             password_hash="xyz",  # noqa: S106
         )
 
-    app.dependency_overrides = {UsersRepository.update: mock_update}
+    app.dependency_overrides = {
+        UsersRepository.get_by_id: mock_get_by_id,
+        UsersRepository.update: mock_update,
+    }
 
     response = await http_test_client.put(
         f"{_ENDPOINT}/{user_id}",
@@ -54,10 +65,16 @@ async def test_not_found(http_test_client: AsyncClient) -> None:
     """
     user_id = "94a9187d-197a-4160-8d9e-1634d2b42415"
 
+    async def mock_get_by_id() -> User | None:
+        return None
+
     async def mock_update() -> User | None:
         return None
 
-    app.dependency_overrides = {UsersRepository.update: mock_update}
+    app.dependency_overrides = {
+        UsersRepository.get_by_id: mock_get_by_id,
+        UsersRepository.update: mock_update,
+    }
 
     response = await http_test_client.put(
         f"{_ENDPOINT}/{user_id}",
