@@ -90,7 +90,8 @@ class UsersRepository:
             User: The newly created User object.
         """
         user_id = uuid4()
-        # TODO: replace with a proper password hashing implementation
+        # TODO(@manuel-gallina): replace with a proper password hashing implementation
+        #   https://github.com/manuel-gallina/Python.FastAPI.V01/issues/17
         password_hash = f"placeholder:{body.email}"
         async with AsyncSession(main_async_db_engine) as session:
             result = await session.execute(
@@ -128,7 +129,8 @@ class UsersRepository:
         Returns:
             User | None: The updated User object if found, None otherwise.
         """
-        # TODO: replace with a proper password hashing implementation
+        # TODO(@manuel-gallina): replace with a proper password hashing implementation
+        #   https://github.com/manuel-gallina/Python.FastAPI.V01/issues/17
         password_hash = f"placeholder:{body.email}"
         async with AsyncSession(main_async_db_engine) as session:
             result = await session.execute(

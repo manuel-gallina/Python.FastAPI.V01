@@ -1,16 +1,14 @@
 """API routes for user-related operations."""
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import ORJSONResponse, Response
 
 from api.auth.users.models import User
 from api.auth.users.repositories import UsersRepository
-from api.auth.users.schemas import (
-    GetAllUsersResponseSchema,
-    UserResponseSchema,
-)
+from api.auth.users.schemas import GetAllUsersResponseSchema, UserResponseSchema
 from api.shared.schemas.responses import ListResponseSchema, ObjectResponseSchema
 
 router = APIRouter(prefix="/users")
@@ -62,11 +60,13 @@ async def get_all(
     },
 )
 async def get_one(
+    user_id: UUID,  # noqa: ARG001
     user: Annotated[User | None, Depends(UsersRepository.get_by_id)],
 ) -> ORJSONResponse:
     """Get a single user by ID.
 
     Args:
+        user_id (UUID): The ID of the user to retrieve.
         user (User | None): The User object retrieved from the database,
             or None if not found.
 
@@ -77,10 +77,14 @@ async def get_one(
         HTTPException: 404 if the user does not exist.
     """
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+        )
     return ORJSONResponse(
         ObjectResponseSchema(
-            data=UserResponseSchema(id=user.id, full_name=user.full_name, email=user.email)
+            data=UserResponseSchema(
+                id=user.id, full_name=user.full_name, email=user.email
+            )
         ).model_dump(mode="json")
     )
 
@@ -129,11 +133,13 @@ async def create_one(
     },
 )
 async def update_one(
+    user_id: UUID,  # noqa: ARG001
     updated_user: Annotated[User | None, Depends(UsersRepository.update)],
 ) -> ORJSONResponse:
     """Update an existing user.
 
     Args:
+        user_id (UUID): The ID of the user to update.
         updated_user (User | None): The updated User object, or None if not found.
 
     Returns:
@@ -143,7 +149,9 @@ async def update_one(
         HTTPException: 404 if the user does not exist.
     """
     if updated_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+        )
     return ORJSONResponse(
         ObjectResponseSchema(
             data=UserResponseSchema(
@@ -164,11 +172,13 @@ async def update_one(
     },
 )
 async def delete_one(
+    user_id: UUID,  # noqa: ARG001
     deleted: Annotated[bool, Depends(UsersRepository.delete)],
 ) -> Response:
     """Delete a user by ID.
 
     Args:
+        user_id (UUID): The ID of the user to delete.
         deleted (bool): True if the user was deleted, False if not found.
 
     Returns:
@@ -178,5 +188,7 @@ async def delete_one(
         HTTPException: 404 if the user does not exist.
     """
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+        )
     return Response(status_code=status.HTTP_204_NO_CONTENT)

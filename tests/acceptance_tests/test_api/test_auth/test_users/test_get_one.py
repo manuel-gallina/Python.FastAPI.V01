@@ -28,7 +28,7 @@ async def test_success(
         main_async_db_engine,
         [
             f"""insert into auth.user (id, full_name, email, password_hash)
-            values ('{user_id}', 'Test User', 'test@tmp.com', 'placeholder:test@tmp.com');"""
+            values ('{user_id}', 'Test User', 'test@tmp.com', 'xyz');"""
         ],
     )
 
