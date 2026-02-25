@@ -7,16 +7,18 @@ It sets up the application, including its lifespan, middlewares and routes.
 import logging
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import ORJSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.routes import router as api_router
 from api.shared.system.databases import get_async_db_engine
 from api.shared.system.request_tracing import get_request_id, init_request_id
 from api.shared.system.settings import get_settings
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +74,8 @@ app.include_router(api_router)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(
-    request: Request, exc: HTTPException
+    request: Request,  # noqa: ARG001
+    exc: HTTPException,
 ) -> ORJSONResponse:
     """Custom exception handler for HTTP exceptions.
 
