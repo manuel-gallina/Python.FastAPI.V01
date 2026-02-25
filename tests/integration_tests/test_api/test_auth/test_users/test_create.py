@@ -32,7 +32,11 @@ async def test_success(http_test_client: AsyncClient) -> None:
 
     response = await http_test_client.post(
         _ENDPOINT,
-        json={"fullName": "John Doe", "email": "john.doe@tmp.com", "password": "secret"},
+        json={
+            "fullName": "John Doe",
+            "email": "john.doe@tmp.com",
+            "password": "secret",
+        },
     )
 
     assert response.status_code == status.HTTP_201_CREATED, response.text

@@ -32,7 +32,11 @@ async def test_success(http_test_client: AsyncClient) -> None:
 
     response = await http_test_client.put(
         f"{_ENDPOINT}/{user_id}",
-        json={"fullName": "Jane Doe", "email": "jane.doe@tmp.com", "password": "secret"},
+        json={
+            "fullName": "Jane Doe",
+            "email": "jane.doe@tmp.com",
+            "password": "secret",
+        },
     )
 
     assert response.status_code == status.HTTP_200_OK, response.text
@@ -57,7 +61,11 @@ async def test_not_found(http_test_client: AsyncClient) -> None:
 
     response = await http_test_client.put(
         f"{_ENDPOINT}/{user_id}",
-        json={"fullName": "Jane Doe", "email": "jane.doe@tmp.com", "password": "secret"},
+        json={
+            "fullName": "Jane Doe",
+            "email": "jane.doe@tmp.com",
+            "password": "secret",
+        },
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND, response.text
