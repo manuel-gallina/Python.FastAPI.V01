@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from testing_utils.databases import execute_queries
+from testing_utils.responses import assert_error_response
 
 _ENDPOINT = "/api/auth/users"
 
@@ -58,3 +59,9 @@ async def test_not_found(http_client: AsyncClient) -> None:
     response = await http_client.delete(f"{_ENDPOINT}/{user_id}")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND, response.text
+    assert_error_response(
+        response,
+        code="NOT_FOUND_404",
+        message="User not found with the given ID.",
+        detail=f"User not found with ID={user_id}.",
+    )
