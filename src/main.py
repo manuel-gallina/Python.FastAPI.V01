@@ -10,9 +10,10 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse
 
 from api.routes import router as api_router
+from api.shared.schemas.errors import ApiError
 from api.shared.system.databases import get_async_db_engine
 from api.shared.system.request_tracing import get_request_id, init_request_id
 from api.shared.system.settings import get_settings
@@ -73,21 +74,27 @@ app.include_router(api_router)
 
 
 @app.exception_handler(HTTPException)
+@app.exception_handler(ApiError)
 async def http_exception_handler(
     request: Request,  # noqa: ARG001
-    exc: HTTPException,
-) -> ORJSONResponse:
+    exc: HTTPException | ApiError,
+) -> Response:
     """Custom exception handler for HTTP exceptions.
 
     Args:
         request (Request): The incoming HTTP request that caused the exception.
-        exc (HTTPException): The HTTP exception that was raised.
+        exc (HTTPException | ApiError): The exception that was raised.
 
     Returns:
-        ORJSONResponse: A JSON response containing the error details
+        Response: A JSON response containing the error details
             and the appropriate status code.
     """
-    return ORJSONResponse(content=exc.detail, status_code=exc.status_code)
+    if isinstance(exc, ApiError):
+        api_error = exc
+    else:
+        api_error = ApiError
+
+    return JSONResponse(content=exc.detail, status_code=exc.status_code)
 
 
 @app.middleware("http")
