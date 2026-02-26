@@ -36,19 +36,19 @@ class ApiError(Exception):
     """Custom exception class for API errors."""
 
     status_code: int
-    api_error: _BaseApiError
+    error: _BaseApiError
 
-    def __init__(self, status_code: int, api_error: _BaseApiError) -> None:
+    def __init__(self, status_code: int, error: _BaseApiError) -> None:
         """Initialize the ApiError with the given API error details.
 
         Args:
             status_code (int): The HTTP status code associated with the error.
-            api_error (_BaseApiError): The API error details
+            error (_BaseApiError): The API error details
                 to be included in the exception.
         """
         self.status_code = status_code
-        self.api_error = api_error
-        super().__init__(api_error.detail)
+        self.error = error
+        super().__init__(error.detail)
 
     @staticmethod
     def from_http_exception(exc: HTTPException) -> "ApiError":
@@ -63,7 +63,7 @@ class ApiError(Exception):
         """
         return ApiError(
             status_code=exc.status_code,
-            api_error=_BaseApiError(
+            error=_BaseApiError(
                 request_id="N/A",
                 code=str(exc.status_code),
                 message=exc.detail,

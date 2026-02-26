@@ -76,8 +76,7 @@ app.include_router(api_router)
 @app.exception_handler(HTTPException)
 @app.exception_handler(ApiError)
 async def http_exception_handler(
-    request: Request,  # noqa: ARG001
-    exc: HTTPException | ApiError,
+    request: Request, exc: HTTPException | ApiError
 ) -> Response:
     """Custom exception handler for HTTP exceptions.
 
@@ -89,12 +88,12 @@ async def http_exception_handler(
         Response: A JSON response containing the error details
             and the appropriate status code.
     """
-    if isinstance(exc, ApiError):
-        api_error = exc
-    else:
-        api_error = ApiError
-
-    return JSONResponse(content=exc.detail, status_code=exc.status_code)
+    api_error = exc if isinstance(exc, ApiError) else ApiError.from_http_exception(exc)
+    api_error.error.request_id = get_request_id(request)
+    return JSONResponse(
+        content=api_error.error.model_dump(mode="json"),
+        status_code=api_error.status_code,
+    )
 
 
 @app.middleware("http")

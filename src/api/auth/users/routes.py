@@ -3,12 +3,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from api.auth.users.models import User
 from api.auth.users.repositories import UsersRepository
 from api.auth.users.schemas import GetAllUsersResponseSchema, UserResponseSchema
-from api.shared.schemas.errors import NotFoundError, UnprocessableContentError
+from api.shared.schemas.errors import ApiError, NotFoundError, UnprocessableContentError
 from api.shared.schemas.responses import ListResponseSchema, ObjectResponseSchema
 from api.shared.system.request_tracing import get_request_id
 
@@ -77,16 +77,16 @@ async def get_one(
             containing the user data.
 
     Raises:
-        HTTPException: If the user was not found (404).
+        ApiError: If the user was not found (404).
     """
     if user is None:
-        raise HTTPException(
+        raise ApiError(
             status.HTTP_404_NOT_FOUND,
             NotFoundError(
                 message="User not found with the given ID.",
                 detail=f"User not found with ID={user_id}.",
                 request_id=request_id,
-            ).model_dump(mode="json"),
+            ),
         )
     return ObjectResponseSchema(
         data=UserResponseSchema(id=user.id, full_name=user.full_name, email=user.email)
@@ -154,16 +154,16 @@ async def update(
             containing the updated user data.
 
     Raises:
-        HTTPException: If the user is not found (404).
+        ApiError: If the user is not found (404).
     """
     if not user:
-        raise HTTPException(
+        raise ApiError(
             status.HTTP_404_NOT_FOUND,
             NotFoundError(
                 message="User not found with the given ID.",
                 detail=f"User not found with ID={user_id}.",
                 request_id=request_id,
-            ).model_dump(mode="json"),
+            ),
         )
 
     return ObjectResponseSchema(
@@ -202,23 +202,23 @@ async def delete(
         None: A 204 No Content response if the user was deleted successfully.
 
     Raises:
-        HTTPException: If the user was not found (404) or if the deletion failed (422).
+        ApiError: If the user was not found (404) or if the deletion failed (422).
     """
     if not user:
-        raise HTTPException(
+        raise ApiError(
             status.HTTP_404_NOT_FOUND,
             NotFoundError(
                 message="User not found with the given ID.",
                 detail=f"User not found with ID={user_id}.",
                 request_id=request_id,
-            ).model_dump(mode="json"),
+            ),
         )
     if not deleted:
-        raise HTTPException(
+        raise ApiError(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             UnprocessableContentError(
                 message="Failed to delete the user.",
                 detail=f"Failed to delete user with ID={user_id}.",
                 request_id=request_id,
-            ).model_dump(mode="json"),
+            ),
         )
