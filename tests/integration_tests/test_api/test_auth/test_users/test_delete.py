@@ -7,6 +7,7 @@ from api.auth.users.repositories import UsersRepository
 from fastapi import status
 from httpx import AsyncClient
 from main import app
+from testing_utils.responses import assert_error_response
 
 _ENDPOINT = "/api/auth/users"
 
@@ -64,3 +65,9 @@ async def test_not_found(http_test_client: AsyncClient) -> None:
     response = await http_test_client.delete(f"{_ENDPOINT}/{user_id}")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND, response.text
+    assert_error_response(
+        response,
+        code="NOT_FOUND_404",
+        message="User not found with the given ID.",
+        detail=f"User not found with ID={user_id}.",
+    )
