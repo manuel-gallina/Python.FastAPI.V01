@@ -28,7 +28,9 @@ _(none — no existing spec-level requirements are changing)_
 
 - `.github/workflows/release.yml` — new workflow file
 - `.dagger/src/ci_pipeline/main.py` — `publish_docker_image` function signature and implementation adapted to accept an
-  explicit version parameter
-- `pyproject.toml` — version field updated automatically by the release workflow
-- GitHub repository settings — requires `GITHUB_TOKEN` with `contents: write` (tags) and `packages: write` (GHCR) permissions; no additional secrets needed
+  explicit version parameter and bake `PROJECT__VERSION` into the container image
+- `pyproject.toml` — version field set to `0.0.0` placeholder; real version baked into the image at publish time via
+  `PROJECT__VERSION` env var
+- GitHub repository settings — requires `GITHUB_TOKEN` with `contents: write` (tags) and a `GHCR_TOKEN` repository
+  secret (Classic PAT with `write:packages` scope) for GHCR authentication
     
