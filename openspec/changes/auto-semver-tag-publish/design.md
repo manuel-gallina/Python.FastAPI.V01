@@ -70,7 +70,19 @@ The release workflow triggers on `push` to `main`. PSR is configured to:
 **Why not `workflow_run` gating on tests:** The `tests.yml` workflow already gates merging via branch protection rules.
 A `push`-to-main trigger is sufficient and simpler.
 
-### 4. GHCR authentication
+### 4. Branch protection bypass for PSR push
+
+PSR pushes a version-bump commit directly to `main` as part of the release process. The repository's branch protection rules (require PRs, require status checks) block direct pushes — including from `GITHUB_TOKEN` — unless an explicit bypass is configured.
+
+**Decision:** Grant `github-actions[bot]` a bypass exception in the branch protection rules. This allows the PSR version-bump commit and tag push to succeed without changing the protection model for human contributors (PRs still required for everyone else).
+
+**Alternatives considered:**
+- PAT with admin rights — works, but introduces a long-lived credential to rotate and manage
+- Skip version-bump commit (`commit = false` in PSR config) — avoids the push entirely, but `pyproject.toml` version would never be updated automatically
+
+**Note:** PSR's version-bump commit message includes `[skip ci]` by default, preventing the push from re-triggering `release.yml`.
+
+### 5. GHCR authentication
 
 Use `GITHUB_TOKEN` as the registry token (with `packages: write` permission declared in the workflow). This avoids
 managing a separate long-lived `GHCR_TOKEN` secret.

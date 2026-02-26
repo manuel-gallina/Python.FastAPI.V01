@@ -30,6 +30,8 @@
 
 ## 4. Bootstrap & Verification
 
+- [ ] 4.0 In GitHub repo settings → Branches → branch protection rule for `main`, add a bypass exception for
+  `github-actions[bot]` — **required before merging**; without it PSR cannot push the version-bump commit to `main`
 - [ ] 4.1 Create an anchor Git tag (e.g., `0.0.0`) on current `main` HEAD so PSR has a baseline to compute the first
   bump from — **this must be done on `main` before this change's PR is merged**; if omitted, PSR will create an
   unintended release on first run
