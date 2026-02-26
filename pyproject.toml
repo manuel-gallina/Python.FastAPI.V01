@@ -31,8 +31,8 @@ dev = [
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
-tag_format = "v{version}"
-commit_parser = "angular"
+tag_format = "{version}"
+commit_parser = "conventional"
 
 [tool.semantic_release.branches.main]
 match = "main"
