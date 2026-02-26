@@ -305,6 +305,13 @@ class PythonFastapiV01:
         token: Annotated[dagger.Secret, Doc("registry token")],
         registry: Annotated[str, Doc("registry url")] = "ghcr.io",
         username: Annotated[str, Doc("registry username")] = "manuel-gallina",
+        version: Annotated[
+            str | None,
+            Doc(
+                "explicit version tag to publish (e.g. '1.2.0', no 'v' prefix); "
+                "when omitted the version is read from pyproject.toml"
+            ),
+        ] = None,
     ) -> list[str]:
         """Publish the Docker image to the specified registry.
 
@@ -313,6 +320,10 @@ class PythonFastapiV01:
             token (dagger.Secret): The registry token for authentication.
             registry (str): The registry URL where the image will be published.
             username (str): The registry username for authentication.
+            version (str | None): Explicit version tag (no 'v' prefix). When
+                provided it overrides the version read from pyproject.toml,
+                decoupling the published tag from the file's static content.
+                Defaults to None (read from pyproject.toml).
 
         Returns:
             list[str]: A list of published image tags.
@@ -322,14 +333,15 @@ class PythonFastapiV01:
         #   and allow for a different image path or derive
         #   the image path from the username.
         #   https://github.com/manuel-gallina/Python.FastAPI.V01/issues/7
-        pyproject_toml = await source.file("pyproject.toml").contents()
-        project_version = tomllib.loads(pyproject_toml)["project"]["version"]
+        if version is None:
+            pyproject_toml = await source.file("pyproject.toml").contents()
+            version = tomllib.loads(pyproject_toml)["project"]["version"]
 
         container_name = "python-fastapi-v01"
         container = self.build_env(source).with_registry_auth(registry, username, token)
 
         published_tags = []
-        for tag in ["latest", project_version]:
+        for tag in ["latest", version]:
             published_tags.append(
                 await container.publish(f"{registry}/{username}/{container_name}:{tag}")
             )

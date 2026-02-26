@@ -24,9 +24,18 @@ dev = [
     "psycopg-binary>=3.3.2",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
+    "python-semantic-release>=10.5.3",
     "ruff>=0.15.1",
-    "yappi>=1.7.3"
+    "yappi>=1.7.3",
 ]
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+tag_format = "{version}"
+commit_parser = "conventional"
+
+[tool.semantic_release.branches.main]
+match = "main"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

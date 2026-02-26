@@ -1,0 +1,31 @@
+name: release.yml
+on:
+  push:
+    branches: ['main']
+concurrency: release
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run semantic release
+        id: release
+        uses: python-semantic-release/python-semantic-release@v10
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Dagger CLI
+        if: steps.release.outputs.released == 'true'
+        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
+      - name: Publish Docker image
+        if: steps.release.outputs.released == 'true'
+        run: dagger call publish-docker-image --token env:GITHUB_TOKEN --version ${{ steps.release.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
