@@ -338,7 +338,11 @@ class PythonFastapiV01:
             version = tomllib.loads(pyproject_toml)["project"]["version"]
 
         container_name = "python-fastapi-v01"
-        container = self.build_env(source).with_registry_auth(registry, username, token)
+        container = (
+            self.build_env(source)
+            .with_env_variable("PROJECT__VERSION", version)
+            .with_registry_auth(registry, username, token)
+        )
 
         published_tags = []
         for tag in ["latest", version]:
