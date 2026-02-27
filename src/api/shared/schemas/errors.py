@@ -51,11 +51,13 @@ class ApiError(Exception):
         super().__init__(error.detail)
 
     @staticmethod
-    def from_http_exception(exc: HTTPException) -> "ApiError":
+    def from_http_exception(exc: HTTPException, request_id: str = "N/A") -> "ApiError":
         """Create an ApiError instance from an HTTPException.
 
         Args:
             exc (HTTPException): The HTTPException to convert into an ApiError.
+            request_id (str, optional): The unique ID of the request
+                for tracing purposes.
 
         Returns:
             ApiError: An instance of ApiError containing
@@ -64,7 +66,7 @@ class ApiError(Exception):
         return ApiError(
             status_code=exc.status_code,
             error=_BaseApiError(
-                request_id="N/A",
+                request_id=request_id,
                 code=str(exc.status_code),
                 message=exc.detail,
                 detail=exc.detail,

@@ -88,8 +88,11 @@ async def http_exception_handler(
         Response: A JSON response containing the error details
             and the appropriate status code.
     """
-    api_error = exc if isinstance(exc, ApiError) else ApiError.from_http_exception(exc)
-    api_error.error.request_id = get_request_id(request)
+    api_error = (
+        exc
+        if isinstance(exc, ApiError)
+        else ApiError.from_http_exception(exc, get_request_id(request))
+    )
     return JSONResponse(
         content=api_error.error.model_dump(mode="json"),
         status_code=api_error.status_code,
