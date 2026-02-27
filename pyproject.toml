@@ -1,16 +1,15 @@
 [project]
 name = "python-fastapi-v01"
 title = "FastAPI Template V1"
-version = "0.1.0-dev.1"
+version = "0.0.0"
 description = "Template project for FastAPI applications."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "asyncpg>=0.31.0",
-    "fastapi[standard]>=0.129.0",
+    "fastapi[standard]>=0.133.1",
     "greenlet>=3.3.1",
-    "orjson>=3.11.7",
-    "sqlalchemy>=2.0.46",
+    "sqlalchemy>=2.0.47",
     "tzdata>=2025.3"
 ]
 
@@ -20,12 +19,12 @@ dev = [
     "asgi-lifespan>=2.1.0",
     "dagger-io>=0.19.11",
     "httpx>=0.28.1",
-    "psycopg>=3.3.2",
-    "psycopg-binary>=3.3.2",
+    "psycopg>=3.3.3",
+    "psycopg-binary>=3.3.3",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
-    "ruff>=0.15.1",
-    "yappi>=1.7.3"
+    "ruff>=0.15.3",
+    "yappi>=1.7.3",
 ]
 
 [tool.pytest.ini_options]

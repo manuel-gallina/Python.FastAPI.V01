@@ -5,7 +5,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, status
 from fastapi.params import Depends
-from fastapi.responses import ORJSONResponse
 
 from api.server_info.repositories import MainDbInfoRepository
 from api.server_info.schemas import (
@@ -34,7 +33,7 @@ async def get_server_info(
     settings: Annotated[Settings, Depends(get_settings)],
     main_db_info: Annotated[DatabaseInfoSchema, Depends(MainDbInfoRepository.get)],
     datetime_provider: Annotated[DatetimeProvider, Depends()],
-) -> ORJSONResponse:
+) -> ObjectResponseSchema[GetServerInfoResponseSchema]:
     """Get information about the server.
 
     Information includes the server version, current datetime, and the status
@@ -47,14 +46,13 @@ async def get_server_info(
             the current datetime.
 
     Returns:
-        ORJSONResponse: A JSON response containing the server information.
+        ObjectResponseSchema[GetServerInfoResponseSchema]: A JSON response
+            containing the server information.
     """
-    return ORJSONResponse(
-        ObjectResponseSchema(
-            data=GetServerInfoResponseSchema(
-                server_version=settings.project.version,
-                current_datetime=datetime_provider.now(),
-                subsystems=SubsystemsInfoSchema(main_db=main_db_info),
-            )
-        ).model_dump(mode="json")
+    return ObjectResponseSchema(
+        data=GetServerInfoResponseSchema(
+            server_version=settings.project.version,
+            current_datetime=datetime_provider.now(),
+            subsystems=SubsystemsInfoSchema(main_db=main_db_info),
+        )
     )

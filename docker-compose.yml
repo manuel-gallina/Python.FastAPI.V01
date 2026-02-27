@@ -1,6 +1,6 @@
 services:
   api:
-    image: ghcr.io/manuel-gallina/python-fastapi-v01:0.1.0-dev.1
+    image: ghcr.io/manuel-gallina/python-fastapi-v01:0.2.0
     ports:
       - "9101:8000"
     command:
@@ -11,6 +11,7 @@ services:
       DATABASE__MAIN_CONNECTION__HOST: postgres
     volumes:
       - ./src:/project/src
+      - ./.env:/project/.env
   postgres:
     image: postgres:18
     environment:

@@ -49,6 +49,9 @@ select = [
     "YTT",
     "D411",
 ]
+ignore = [
+    "FAST003"
+]
 
 [lint.pydocstyle]
 convention = "google"

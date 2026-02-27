@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dagger call test-integration*)",
+      "Bash(dagger call test-acceptance*)",
+      "Bash(dagger call test-unit*)",
+      "Bash(dagger call test*)",
+      "Bash(dagger call lint*)",
+      "Bash(openspec new:*)",
+      "Bash(openspec status:*)",
+      "Bash(openspec instructions:*)"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+name: release.yml
+on:
+  push:
+    branches: ['main']
+concurrency: release
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compute next version and create tag
+        id: tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: false
+          tag_prefix: ""
+      - name: Install Dagger CLI
+        if: steps.tag.outputs.new_tag != ''
+        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
+      - name: Publish Docker image
+        if: steps.tag.outputs.new_tag != ''
+        run: dagger call publish-docker-image --token env:GHCR_TOKEN --version ${{ steps.tag.outputs.new_tag }}
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
