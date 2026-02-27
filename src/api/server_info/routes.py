@@ -23,10 +23,7 @@ router = APIRouter(prefix="/server-info")
 @router.get(
     "",
     responses={
-        status.HTTP_200_OK: {
-            "model": ObjectResponseSchema[GetServerInfoResponseSchema],
-            "description": "Server information retrieved successfully.",
-        }
+        status.HTTP_200_OK: {"model": ObjectResponseSchema[GetServerInfoResponseSchema]}
     },
 )
 async def get_server_info(
@@ -38,16 +35,6 @@ async def get_server_info(
 
     Information includes the server version, current datetime, and the status
     of its subsystems.
-
-    Args:
-        settings (Settings): The application settings.
-        main_db_info (DatabaseInfoSchema): Information about the main database.
-        datetime_provider (DatetimeProvider): A provider for getting
-            the current datetime.
-
-    Returns:
-        ObjectResponseSchema[GetServerInfoResponseSchema]: A JSON response
-            containing the server information.
     """
     return ObjectResponseSchema(
         data=GetServerInfoResponseSchema(

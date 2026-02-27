@@ -1,2 +1,6 @@
 ### GET users
 GET {{host}}/api/auth/users
+
+
+### GET users with filters
+GET {{host}}/api/auth/users?filters={"field":"fullName","operator":"equal","value":"John Doe"}

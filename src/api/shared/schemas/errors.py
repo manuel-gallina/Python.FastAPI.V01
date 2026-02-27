@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from api.shared.schemas.base import BaseSchema
 
 
-class _BaseApiError(BaseSchema):
+class ApiErrorSchema(BaseSchema):
     """Schema for representing an error in API responses."""
 
     request_id: str
@@ -14,19 +14,19 @@ class _BaseApiError(BaseSchema):
     detail: str
 
 
-class NotFoundError(_BaseApiError):
+class NotFoundErrorSchema(ApiErrorSchema):
     """Schema for representing a 404 Not Found error in API responses."""
 
     code: str = "NOT_FOUND_404"
 
 
-class UnprocessableContentError(_BaseApiError):
+class UnprocessableContentErrorSchema(ApiErrorSchema):
     """Schema for representing a 422 Unprocessable Content error in API responses."""
 
     code: str = "UNPROCESSABLE_CONTENT_422"
 
 
-class ConflictError(_BaseApiError):
+class ConflictErrorSchema(ApiErrorSchema):
     """Schema for representing a 409 Conflict error in API responses."""
 
     code: str = "CONFLICT_409"
@@ -36,14 +36,14 @@ class ApiError(Exception):
     """Custom exception class for API errors."""
 
     status_code: int
-    error: _BaseApiError
+    error: ApiErrorSchema
 
-    def __init__(self, status_code: int, error: _BaseApiError) -> None:
+    def __init__(self, status_code: int, error: ApiErrorSchema) -> None:
         """Initialize the ApiError with the given API error details.
 
         Args:
             status_code (int): The HTTP status code associated with the error.
-            error (_BaseApiError): The API error details
+            error (ApiErrorSchema): The API error details
                 to be included in the exception.
         """
         self.status_code = status_code
@@ -65,7 +65,7 @@ class ApiError(Exception):
         """
         return ApiError(
             status_code=exc.status_code,
-            error=_BaseApiError(
+            error=ApiErrorSchema(
                 request_id=request_id,
                 code=str(exc.status_code),
                 message=exc.detail,

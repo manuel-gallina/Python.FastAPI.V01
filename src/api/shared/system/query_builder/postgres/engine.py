@@ -31,11 +31,11 @@ class Equal(Operator):
 class QueryBuilder(IQueryBuilder):
     """Utilities for building PostgreSQL queries."""
 
-    def __init__(self, fields: dict[str, Field]) -> None:
+    def __init__(self, fields: list[Field]) -> None:
         """Initializes a QueryBuilder instance.
 
         Args:
-            fields (dict[str, Field]): A dictionary mapping field names
-                to Field instances.
+            fields (list[Field]): A list of Field instances that
+                can be used in the query builder.
         """
         super().__init__(fields, {Operators.EQUAL: Equal()})

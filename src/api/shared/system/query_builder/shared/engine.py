@@ -3,10 +3,15 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import StrEnum, auto
-from typing import Any, Self
+from typing import Annotated, Any, Self
 from uuid import uuid4
 
+from fastapi import Depends, status
 from pydantic import BaseModel
+
+from api.shared.schemas.errors import ApiError, UnprocessableContentErrorSchema
+from api.shared.system.query_builder.shared.query_params import get_filters
+from api.shared.system.request_tracing import get_request_id
 
 WhereClause = str
 OrderByClause = str
@@ -153,18 +158,16 @@ class IQueryBuilder:
     fields: dict[str, Field]
     operators: dict[str, IOperator]
 
-    def __init__(
-        self, fields: dict[str, Field], operators: dict[str, IOperator]
-    ) -> None:
+    def __init__(self, fields: list[Field], operators: dict[str, IOperator]) -> None:
         """Initializes a QueryBuilder instance.
 
         Args:
-            fields (dict[str, Field]): A dictionary mapping field names
-                to Field instances.
+            fields (list[Field]): A list of Field instances that
+                can be used in the query builder.
             operators (dict[str, IOperator]): A dictionary mapping operator
                 names to Operator instances.
         """
-        self.fields = {name.lower(): field for name, field in fields.items()}
+        self.fields = {field.name.lower(): field for field in fields}
         self.operators = {
             name.lower(): operator for name, operator in operators.items()
         }
@@ -178,62 +181,78 @@ class IQueryBuilder:
         return self
 
     def build_where(
-        self, where_: dict[str, Any] | None, params: dict[str, Any] | None = None
+        self,
+        where: Annotated[dict[str, Any] | None, Depends(get_filters)],
+        request_id: Annotated[str, Depends(get_request_id)] = "N/A",
     ) -> tuple[WhereClause, dict[str, Any]]:
         """Builds a WHERE clause from the given where structure and parameters.
 
         Args:
-            where_ (dict[str, Any] | None): The structure representing the where clause.
-            params (dict[str, Any] | None): The dictionary where any parameters needed
-                for the where clause will be registered.
+            where (dict[str, Any] | None): The structure representing the where clause.
+            request_id (str): The unique ID of the request for tracing purposes.
 
         Returns:
             tuple[WhereClause, dict[str, Any]]: A tuple containing the compiled
                 WHERE clause and the dictionary of parameters.
         """
-        params = params or {}
 
-        if not where_:
-            return "1=1", params
+        def _build_where(
+            where_: dict[str, Any] | None, params: dict[str, Any] | None = None
+        ) -> tuple[WhereClause, dict[str, Any]]:
+            try:
+                params = params or {}
 
-        if "field" in where_:
-            rule = SimpleWhereRule(**where_)
+                if not where_:
+                    return "1=1", params
 
-            if rule.operator.lower() not in self.operators:
-                error = f"Unsupported operator: {rule.operator}."
-                raise ValueError(error)
-            operator = self.operators[rule.operator.lower()]
+                if "field" in where_:
+                    rule = SimpleWhereRule(**where_)
 
-            if rule.field.lower() not in self.fields:
-                error = f"Unknown field: {rule.field}."
-                raise ValueError(error)
-            field = self.fields[rule.field.lower()]
+                    if rule.operator.lower() not in self.operators:
+                        error = f"Unsupported operator: {rule.operator}."
+                        raise ValueError(error)
+                    operator = self.operators[rule.operator.lower()]
 
-            compiled_rule = operator.compile(field, rule.value, params)
-            return compiled_rule, params
+                    if rule.field.lower() not in self.fields:
+                        error = f"Unknown field: {rule.field}."
+                        raise ValueError(error)
+                    field = self.fields[rule.field.lower()]
 
-        if "condition" in where_:
-            rule = ComplexWhereRule(**where_)
+                    compiled_rule = operator.compile(field, rule.value, params)
+                    return compiled_rule, params
 
-            if rule.condition.lower() not in Conditions:
-                error = f"Unsupported condition: {rule.condition}."
-                raise ValueError(error)
+                if "condition" in where_:
+                    rule = ComplexWhereRule(**where_)
 
-            compiled_rules = []
-            for sub_rule in rule.rules:
-                compiled_sub_rule, params = self.build_where(
-                    sub_rule.model_dump(), params
+                    if rule.condition.lower() not in Conditions:
+                        error = f"Unsupported condition: {rule.condition}."
+                        raise ValueError(error)
+
+                    compiled_rules = []
+                    for sub_rule in rule.rules:
+                        compiled_sub_rule, params = _build_where(
+                            sub_rule.model_dump(), params
+                        )
+                        compiled_rules.append(f"({compiled_sub_rule})")
+
+                    condition_str = f" {rule.condition.lower()} ".join(compiled_rules)
+                    return condition_str, params
+
+                error = (
+                    "Invalid where clause structure: expected either a simple "
+                    "rule with 'field' or a condition with 'condition'."
                 )
-                compiled_rules.append(f"({compiled_sub_rule})")
+                raise ValueError(error)
+            except ValueError as e:
+                error = str(e)
+                raise ApiError(
+                    status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    UnprocessableContentErrorSchema(
+                        request_id=request_id, message=error, detail=error
+                    ),
+                ) from e
 
-            condition_str = f" {rule.condition.lower()} ".join(compiled_rules)
-            return condition_str, params
-
-        error = (
-            "Invalid where clause structure: expected either a simple "
-            "rule with 'field' or a condition with 'condition'."
-        )
-        raise ValueError(error)
+        return _build_where(where)
 
     def build_order_by(self, order_by_: list[dict[str, str]]) -> OrderByClause:
         """Builds an ORDER BY clause from the given order by structure.

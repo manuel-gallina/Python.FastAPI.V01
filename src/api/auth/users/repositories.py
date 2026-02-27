@@ -1,6 +1,6 @@
 """Repository for fetching user data from the database."""
 
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID, uuid4
 
 from fastapi import Depends
@@ -10,15 +10,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.auth.users.models import User
 from api.auth.users.schemas import CreateUserRequestSchema, UpdateUserRequestSchema
 from api.shared.system.databases import get_request_main_async_db_session
+from api.shared.system.query_builder.postgres.engine import QueryBuilder
+from api.shared.system.query_builder.shared.engine import Field, WhereClause
 
 
 class UsersRepository:
     """Repository for fetching user data from the database."""
 
+    query_builder = QueryBuilder(
+        [
+            Field("id", "auth.user.id"),
+            Field("fullName", "auth.user.full_name"),
+            Field("email", "auth.user.email"),
+        ]
+    )
+
     @staticmethod
     async def get_all(
         main_async_db_session: Annotated[
             AsyncSession, Depends(get_request_main_async_db_session)
+        ],
+        filters: Annotated[
+            tuple[WhereClause, dict[str, Any]], Depends(query_builder.build_where)
         ],
     ) -> list[User]:
         """Fetch all users from the database.
@@ -26,11 +39,15 @@ class UsersRepository:
         Args:
             main_async_db_session (AsyncSession): The asynchronous database session
                 to use for the query.
+            filters (dict[str, Any]): The filters to apply to the query.
 
         Returns:
             list[User]: A list of User objects representing all users in the database.
         """
-        result = await main_async_db_session.execute(text("select * from auth.user;"))
+        where, params = filters
+        result = await main_async_db_session.execute(
+            text(f"select * from auth.user where {where};"), params
+        )
         rows = result.all()
         return [User.model_validate(row) for row in rows]
 
