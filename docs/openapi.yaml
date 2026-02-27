@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: FastAPI Template V1
   description: Template project for FastAPI applications.
-  version: 0.1.0-dev.1
+  version: 0.0.0
   x-logo:
     url: ./logo/logo.png
     altText: Logo
@@ -10,29 +10,218 @@ paths:
   /api/server-info:
     get:
       summary: Get Server Info
-      description: Endpoint to retrieve server information, including version, current
-        datetime and subsystems info.
+      description: 'Get information about the server.
+
+
+        Information includes the server version, current datetime, and the status
+
+        of its subsystems.'
       operationId: get_server_info_api_server_info_get
       responses:
         '200':
-          description: Server information retrieved successfully.
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ObjectResponseSchema_GetServerInfoResponseSchema_'
   /api/auth/users:
     get:
-      summary: Get All
-      operationId: get_all_api_auth_users_get
+      tags:
+      - Users
+      summary: Get List
+      description: Get the list of all users.
+      operationId: get_list_api_auth_users_get
+      parameters:
+      - name: filters
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Filters
       responses:
         '200':
-          description: List of users retrieved successfully.
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListResponseSchema_GetAllUsersResponseSchema_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Users
+      summary: Create
+      description: Create a new user.
+      operationId: create_api_auth_users_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequestSchema'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectResponseSchema_UserResponseSchema_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/users/{user_id}:
+    get:
+      tags:
+      - Users
+      summary: Get One
+      description: Get a single user by ID.
+      operationId: get_one_api_auth_users__user_id__get
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectResponseSchema_UserResponseSchema_'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseSchema'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - Users
+      summary: Update
+      description: Update an existing user.
+      operationId: update_api_auth_users__user_id__put
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequestSchema'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectResponseSchema_UserResponseSchema_'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseSchema'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Users
+      summary: Delete
+      description: Delete a user by ID.
+      operationId: delete_api_auth_users__user_id__delete
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      responses:
+        '204':
+          description: Successful Response
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseSchema'
+          description: Not Found
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseSchema'
+          description: Unprocessable Content
 components:
   schemas:
+    ApiErrorSchema:
+      properties:
+        requestId:
+          type: string
+          title: Requestid
+        code:
+          type: string
+          title: Code
+        message:
+          type: string
+          title: Message
+        detail:
+          type: string
+          title: Detail
+      type: object
+      required:
+      - requestId
+      - code
+      - message
+      - detail
+      title: ApiErrorSchema
+      description: Schema for representing an error in API responses.
+    CreateUserRequestSchema:
+      properties:
+        fullName:
+          type: string
+          title: Fullname
+        email:
+          type: string
+          title: Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+      - fullName
+      - email
+      - password
+      title: CreateUserRequestSchema
+      description: Schema for the request body of the create user endpoint.
     DatabaseInfoSchema:
       properties:
         status:
@@ -48,6 +237,16 @@ components:
       required:
       - status
       title: DatabaseInfoSchema
+      description: Schema for information about a database subsystem.
+    ErrorResponseSchema:
+      properties:
+        error:
+          $ref: '#/components/schemas/ApiErrorSchema'
+      type: object
+      required:
+      - error
+      title: ErrorResponseSchema
+      description: Schema for the response of an API endpoint when an error occurs.
     GetAllUsersResponseSchema:
       properties:
         id:
@@ -66,6 +265,8 @@ components:
       - fullName
       - email
       title: GetAllUsersResponseSchema
+      description: Schema for the response of the API endpoint that retrieves all
+        users.
     GetServerInfoResponseSchema:
       properties:
         serverVersion:
@@ -85,6 +286,17 @@ components:
       - currentDatetime
       - subsystems
       title: GetServerInfoResponseSchema
+      description: Schema for the response of the API endpoint that retrieves server
+        information.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ListResponseSchema_GetAllUsersResponseSchema_:
       properties:
         data:
@@ -108,6 +320,7 @@ components:
       required:
       - count
       title: MetaSchema
+      description: Schema for the metadata of a list response.
     ObjectResponseSchema_GetServerInfoResponseSchema_:
       properties:
         data:
@@ -116,12 +329,21 @@ components:
       required:
       - data
       title: ObjectResponseSchema[GetServerInfoResponseSchema]
+    ObjectResponseSchema_UserResponseSchema_:
+      properties:
+        data:
+          $ref: '#/components/schemas/UserResponseSchema'
+      type: object
+      required:
+      - data
+      title: ObjectResponseSchema[UserResponseSchema]
     ServerStatus:
       type: string
       enum:
       - ok
       - offline
       title: ServerStatus
+      description: Status of a server subsystem.
     SubsystemsInfoSchema:
       properties:
         mainDb:
@@ -131,3 +353,67 @@ components:
       required:
       - mainDb
       title: SubsystemsInfoSchema
+      description: Schema for information about the server subsystems.
+    UpdateUserRequestSchema:
+      properties:
+        fullName:
+          type: string
+          title: Fullname
+        email:
+          type: string
+          title: Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+      - fullName
+      - email
+      - password
+      title: UpdateUserRequestSchema
+      description: Schema for the request body of the update user endpoint.
+    UserResponseSchema:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        fullName:
+          type: string
+          title: Fullname
+        email:
+          type: string
+          title: Email
+      type: object
+      required:
+      - id
+      - fullName
+      - email
+      title: UserResponseSchema
+      description: Schema for the response of API endpoints that return a single user.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
