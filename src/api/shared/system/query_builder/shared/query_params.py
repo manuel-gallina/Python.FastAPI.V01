@@ -1,10 +1,11 @@
 """Query parameters for the query builder."""
 
 import json
-from typing import Annotated, Any
+from typing import Annotated, Any, Callable
 
 from fastapi import Depends, status
 from fastapi.params import Query
+from pydantic import BaseModel
 
 from api.shared.schemas.errors import ApiError, UnprocessableContentErrorSchema
 from api.shared.system.request_tracing import get_request_id
@@ -64,3 +65,18 @@ def get_sort(
                 ),
             ) from e
     return None
+
+
+class PaginationParams(BaseModel):
+    """Pagination parameters."""
+
+    skip: int
+    limit: int
+
+
+def get_pagination(
+    request_id: Annotated[str, Depends(get_request_id)],
+    skip: Annotated[int | None, Query()],
+    limit: Annotated[int | None, Query()],
+) -> Callable[[...], PaginationParams]:
+    pass
