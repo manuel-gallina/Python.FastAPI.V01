@@ -39,7 +39,8 @@ class UsersRepository:
         Args:
             main_async_db_session (AsyncSession): The asynchronous database session
                 to use for the query.
-            filters (dict[str, Any]): The filters to apply to the query.
+            filters (tuple[WhereClause, dict[str, Any]]): The where clause
+                and parameters to apply to the query, built by the QueryBuilder.
 
         Returns:
             list[User]: A list of User objects representing all users in the database.

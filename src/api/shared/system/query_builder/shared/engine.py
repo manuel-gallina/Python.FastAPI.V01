@@ -187,6 +187,9 @@ class IQueryBuilder:
     ) -> tuple[WhereClause, dict[str, Any]]:
         """Builds a WHERE clause from the given where structure and parameters.
 
+        The default filter is "1=1" if no where clause is provided,
+        which effectively means no filtering.
+
         Args:
             where (dict[str, Any] | None): The structure representing the where clause.
             request_id (str): The unique ID of the request for tracing purposes.
