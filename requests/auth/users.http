@@ -4,3 +4,18 @@ GET {{host}}/api/auth/users
 
 ### GET users with filters
 GET {{host}}/api/auth/users?filters={"field":"fullName","operator":"equal","value":"John Doe"}
+
+
+### GET users with sort
+GET {{host}}/api/auth/users?sort=[{"field":"email","direction":"asc"}]
+
+
+### POST create user
+POST {{host}}/api/auth/users
+Content-Type: application/json
+
+{
+  "fullName": "John Doe",
+  "email": "john.doe3@tmp.com",
+  "password": "password123"
+}

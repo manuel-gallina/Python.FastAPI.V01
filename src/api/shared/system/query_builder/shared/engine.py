@@ -10,7 +10,7 @@ from fastapi import Depends, status
 from pydantic import BaseModel
 
 from api.shared.schemas.errors import ApiError, UnprocessableContentErrorSchema
-from api.shared.system.query_builder.shared.query_params import get_filters
+from api.shared.system.query_builder.shared.query_params import get_filters, get_sort
 from api.shared.system.request_tracing import get_request_id
 
 WhereClause = str
@@ -197,6 +197,10 @@ class IQueryBuilder:
         Returns:
             tuple[WhereClause, dict[str, Any]]: A tuple containing the compiled
                 WHERE clause and the dictionary of parameters.
+
+        Raises:
+            ApiError: If the where clause structure or syntax are invalid,
+                or it contains unknown fields or unsupported operators/conditions.
         """
 
         def _build_where(
@@ -257,29 +261,53 @@ class IQueryBuilder:
 
         return _build_where(where)
 
-    def build_order_by(self, order_by_: list[dict[str, str]]) -> OrderByClause:
+    def build_order_by(
+        self,
+        order_by_: Annotated[list[dict[str, str]] | None, Depends(get_sort)],
+        request_id: Annotated[str, Depends(get_request_id)] = "N/A",
+    ) -> OrderByClause:
         """Builds an ORDER BY clause from the given order by structure.
 
+        The default order by clause is "1=1" if no order by rules are provided,
+        which effectively means no ordering.
+
         Args:
-            order_by_ (list[dict[str, str]]): The structure representing
+            order_by_ (list[dict[str, str]] | None): The structure representing
                 the order by clause.
+            request_id (str): The unique ID of the request for tracing purposes.
 
         Returns:
             OrderByClause: The compiled ORDER BY clause.
+
+        Raises:
+            ApiError: If the order by structure is invalid, or it contains
+                unknown fields or unsupported directions.
         """
-        order_by_clauses = []
-        for order in order_by_:
-            rule = OrderByRule(**order)
+        try:
+            if not order_by_:
+                return "1=1"
 
-            if rule.direction.lower() not in Directions:
-                error = f"Unsupported order by direction: {rule.direction}."
-                raise ValueError(error)
+            order_by_clauses = []
+            for order in order_by_:
+                rule = OrderByRule(**order)
 
-            if rule.field.lower() not in self.fields:
-                error = f"Unknown field: {rule.field}."
-                raise ValueError(error)
-            field = self.fields[rule.field.lower()]
+                if rule.direction.lower() not in Directions:
+                    error = f"Unsupported order by direction: {rule.direction}."
+                    raise ValueError(error)
 
-            order_by_clauses.append(f"{field.definition} {rule.direction.lower()}")
+                if rule.field.lower() not in self.fields:
+                    error = f"Unknown field: {rule.field}."
+                    raise ValueError(error)
+                field = self.fields[rule.field.lower()]
 
-        return ", ".join(order_by_clauses)
+                order_by_clauses.append(f"{field.definition} {rule.direction.lower()}")
+
+            return ", ".join(order_by_clauses)
+        except ValueError as e:
+            error = str(e)
+            raise ApiError(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                UnprocessableContentErrorSchema(
+                    request_id=request_id, message=error, detail=error
+                ),
+            ) from e

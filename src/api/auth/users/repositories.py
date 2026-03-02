@@ -11,7 +11,11 @@ from api.auth.users.models import User
 from api.auth.users.schemas import CreateUserRequestSchema, UpdateUserRequestSchema
 from api.shared.system.databases import get_request_main_async_db_session
 from api.shared.system.query_builder.postgres.engine import QueryBuilder
-from api.shared.system.query_builder.shared.engine import Field, WhereClause
+from api.shared.system.query_builder.shared.engine import (
+    Field,
+    OrderByClause,
+    WhereClause,
+)
 
 
 class UsersRepository:
@@ -33,6 +37,7 @@ class UsersRepository:
         filters: Annotated[
             tuple[WhereClause, dict[str, Any]], Depends(query_builder.build_where)
         ],
+        sort: Annotated[OrderByClause, Depends(query_builder.build_order_by)],
     ) -> list[User]:
         """Fetch all users from the database.
 
@@ -40,14 +45,15 @@ class UsersRepository:
             main_async_db_session (AsyncSession): The asynchronous database session
                 to use for the query.
             filters (tuple[WhereClause, dict[str, Any]]): The where clause
-                and parameters to apply to the query, built by the QueryBuilder.
+                and parameters to apply to the query.
+            sort (OrderByClause): The order by clause to apply to the query,
 
         Returns:
             list[User]: A list of User objects representing all users in the database.
         """
         where, params = filters
         result = await main_async_db_session.execute(
-            text(f"select * from auth.user where {where};"), params
+            text(f"select * from auth.user where {where} order by {sort};"), params
         )
         rows = result.all()
         return [User.model_validate(row) for row in rows]
