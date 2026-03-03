@@ -203,7 +203,7 @@ wheels = [
 
 [[package]]
 name = "dagger-io"
-version = "0.19.11"
+version = "0.20.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -211,6 +211,7 @@ dependencies = [
     { name = "cattrs" },
     { name = "exceptiongroup" },
     { name = "gql", extra = ["httpx"] },
+    { name = "httpcore" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-instrumentation-logging" },
     { name = "opentelemetry-sdk" },
@@ -218,9 +219,9 @@ dependencies = [
     { name = "rich" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1a/23/90ce02be99c95e9625ac9fa24a7f6733ad50a019d317b5c1a44f0f88bf73/dagger_io-0.19.11.tar.gz", hash = "sha256:2544056e3c207afffc09fa91a4cf3e25b42be9748c3cf1d817bb0f8b5f962d20", size = 114254, upload-time = "2026-02-05T23:51:50.117Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6b/3f/d48cd10e83214c15d870c6f6b37fcaaac972f07802514e7448fa2b101e5f/dagger_io-0.20.0.tar.gz", hash = "sha256:b7b42a63b9f149dffb51e0f943e01eaea72bbed6050114bb9ca282288be2705e", size = 116538, upload-time = "2026-02-27T00:15:56.078Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/e9/fc00f9e6c958d8395304d9e050bf42bdf396db7f00ae6d9aaca2e2db5d3e/dagger_io-0.19.11-py3-none-any.whl", hash = "sha256:80a9671ec258cb845d264f7df0569f6ffbf31c50a3ff7820274aa4915b556e5b", size = 103426, upload-time = "2026-02-05T23:51:48.239Z" },
+    { url = "https://files.pythonhosted.org/packages/44/7a/100467db3eafa7d156a18673d7b4647488b46c5788a073c32b07d1675ad5/dagger_io-0.20.0-py3-none-any.whl", hash = "sha256:1b3b0bc3de3cb637a6e009c71d9b04080a53395e4ce9275d5830c79d1a5004eb", size = 105648, upload-time = "2026-02-27T00:15:57.228Z" },
 ]
 
 [[package]]
