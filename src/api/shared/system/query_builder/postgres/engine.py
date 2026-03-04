@@ -8,6 +8,7 @@ from api.shared.system.query_builder.shared.engine import (
     IOperator,
     IQueryBuilder,
     Operators,
+    PaginationLimitConfig,
 )
 
 
@@ -31,11 +32,17 @@ class Equal(Operator):
 class QueryBuilder(IQueryBuilder):
     """Utilities for building PostgreSQL queries."""
 
-    def __init__(self, fields: list[Field]) -> None:
+    def __init__(
+        self,
+        fields: list[Field],
+        pagination_limit_config: PaginationLimitConfig | None = None,
+    ) -> None:
         """Initializes a QueryBuilder instance.
 
         Args:
             fields (list[Field]): A list of Field instances that
                 can be used in the query builder.
+            pagination_limit_config (PaginationLimitConfig | None): The configuration
+                for the pagination limit query parameter.
         """
-        super().__init__(fields, {Operators.EQUAL: Equal()})
+        super().__init__(fields, {Operators.EQUAL: Equal()}, pagination_limit_config)

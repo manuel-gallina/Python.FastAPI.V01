@@ -1,16 +1,17 @@
 """Query builder engine for PostgreSQL."""
 
+import json
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import StrEnum, auto
-from typing import Annotated, Any, Self
+from typing import Annotated, Any
 from uuid import uuid4
 
-from fastapi import Depends, status
-from pydantic import BaseModel
+import pydantic
+from fastapi import Depends, Query, status
+from pydantic import AliasChoices, BaseModel
 
 from api.shared.schemas.errors import ApiError, UnprocessableContentErrorSchema
-from api.shared.system.query_builder.shared.query_params import get_filters, get_sort
 from api.shared.system.request_tracing import get_request_id
 
 WhereClause = str
@@ -152,13 +153,52 @@ class OrderByRule(BaseModel):
     direction: str = Directions.ASC
 
 
+class QueryBuilderCompiledParams(BaseModel):
+    """The result of compiling query builder parameters."""
+
+    where: WhereClause
+    order_by: OrderByClause
+    skip: int
+    limit: int
+    sql_params: dict[str, Any]
+
+
+class QueryBuilderParams(BaseModel):
+    """The parameters for building a query."""
+
+    where: Annotated[
+        str | None, pydantic.Field(validation_alias=AliasChoices("where", "filters"))
+    ] = None
+    order_by: Annotated[
+        str | None, pydantic.Field(validation_alias=AliasChoices("orderBy", "sort"))
+    ] = None
+    skip: int | None = None
+    limit: int | None = None
+
+
+class PaginationLimitConfig(BaseModel):
+    """Configuration for pagination limit query parameter."""
+
+    default: int
+    max: int
+
+
+QUERY_BUILDER_ERROR_MESSAGE = "Query builder error."
+
+
 class IQueryBuilder:
     """Utilities for building SQL queries."""
 
     fields: dict[str, Field]
     operators: dict[str, IOperator]
+    pagination_limit_config: PaginationLimitConfig
 
-    def __init__(self, fields: list[Field], operators: dict[str, IOperator]) -> None:
+    def __init__(
+        self,
+        fields: list[Field],
+        operators: dict[str, IOperator],
+        pagination_limit_config: PaginationLimitConfig | None = None,
+    ) -> None:
         """Initializes a QueryBuilder instance.
 
         Args:
@@ -166,24 +206,96 @@ class IQueryBuilder:
                 can be used in the query builder.
             operators (dict[str, IOperator]): A dictionary mapping operator
                 names to Operator instances.
+            pagination_limit_config (PaginationLimitConfig | None): The configuration
+                for the pagination limit query parameter.
         """
         self.fields = {field.name.lower(): field for field in fields}
         self.operators = {
             name.lower(): operator for name, operator in operators.items()
         }
+        self.pagination_limit_config = pagination_limit_config or PaginationLimitConfig(
+            default=100, max=500
+        )
 
-    def __call__(self) -> Self:
-        """Get a new instance with predefined fields.
+    def get_compiled_params(
+        self,
+        request_params: Annotated[QueryBuilderParams, Query()],
+        request_id: Annotated[str, Depends(get_request_id)],
+    ) -> QueryBuilderCompiledParams:
+        """Compiles the query builder parameters into SQL clauses and parameters.
+
+        Args:
+            request_params (QueryBuilderParams): The query builder parameters
+                extracted from the request.
+            request_id (str): The unique ID of the request
+                for tracing purposes.
 
         Returns:
-            Self: A new instance of QueryBuilder with the same fields.
+            QueryBuilderCompiledParams: The compiled query parameters including
+                the WHERE clause, ORDER BY clause, skip, limit,
+                and the dictionary of SQL parameters.
+
+        Raises:
+            ApiError: If any of the query parameters are invalid,
+                such as unknown fields, unsupported operators,
+                or if the limit exceeds the maximum allowed.
         """
-        return self
+        raw_where: dict[str, Any] | None = None
+        if request_params.where is not None:
+            try:
+                raw_where = json.loads(request_params.where)
+            except json.JSONDecodeError as e:
+                detail = (
+                    "Invalid 'filters' query parameter. Must be a valid JSON string."
+                )
+                raise ApiError(
+                    status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    UnprocessableContentErrorSchema(
+                        request_id=request_id,
+                        message=QUERY_BUILDER_ERROR_MESSAGE,
+                        detail=detail,
+                    ),
+                ) from e
+        where, params = self.build_where(raw_where, request_id)
+
+        raw_order_by: list[dict[str, str]] | None = None
+        if request_params.order_by is not None:
+            try:
+                raw_order_by = json.loads(request_params.order_by)
+            except json.JSONDecodeError as e:
+                detail = "Invalid 'sort' query parameter. Must be a valid JSON string."
+                raise ApiError(
+                    status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    UnprocessableContentErrorSchema(
+                        request_id=request_id,
+                        message=QUERY_BUILDER_ERROR_MESSAGE,
+                        detail=detail,
+                    ),
+                ) from e
+        order_by = self.build_order_by(raw_order_by, request_id)
+
+        skip = request_params.skip or 0
+
+        limit = request_params.limit or self.pagination_limit_config.default
+        if limit > self.pagination_limit_config.max:
+            detail = (
+                f"Limit cannot exceed {self.pagination_limit_config.max}. "
+                f"Received: {limit}."
+            )
+            raise ApiError(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                UnprocessableContentErrorSchema(
+                    request_id=request_id,
+                    message=QUERY_BUILDER_ERROR_MESSAGE,
+                    detail=detail,
+                ),
+            )
+        return QueryBuilderCompiledParams(
+            where=where, order_by=order_by, skip=skip, limit=limit, sql_params=params
+        )
 
     def build_where(
-        self,
-        where: Annotated[dict[str, Any] | None, Depends(get_filters)],
-        request_id: Annotated[str, Depends(get_request_id)] = "N/A",
+        self, where: dict[str, Any] | None, request_id: str = "N/A"
     ) -> tuple[WhereClause, dict[str, Any]]:
         """Builds a WHERE clause from the given where structure and parameters.
 
@@ -251,20 +363,20 @@ class IQueryBuilder:
                 )
                 raise ValueError(error)
             except ValueError as e:
-                error = str(e)
+                detail = str(e)
                 raise ApiError(
                     status.HTTP_422_UNPROCESSABLE_CONTENT,
                     UnprocessableContentErrorSchema(
-                        request_id=request_id, message=error, detail=error
+                        request_id=request_id,
+                        message=QUERY_BUILDER_ERROR_MESSAGE,
+                        detail=detail,
                     ),
                 ) from e
 
         return _build_where(where)
 
     def build_order_by(
-        self,
-        order_by_: Annotated[list[dict[str, str]] | None, Depends(get_sort)],
-        request_id: Annotated[str, Depends(get_request_id)] = "N/A",
+        self, order_by_: list[dict[str, str]] | None, request_id: str = "N/A"
     ) -> OrderByClause:
         """Builds an ORDER BY clause from the given order by structure.
 
@@ -304,10 +416,12 @@ class IQueryBuilder:
 
             return ", ".join(order_by_clauses)
         except ValueError as e:
-            error = str(e)
+            detail = str(e)
             raise ApiError(
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
                 UnprocessableContentErrorSchema(
-                    request_id=request_id, message=error, detail=error
+                    request_id=request_id,
+                    message=QUERY_BUILDER_ERROR_MESSAGE,
+                    detail=detail,
                 ),
             ) from e

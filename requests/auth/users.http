@@ -9,6 +9,9 @@ GET {{host}}/api/auth/users?filters={"field":"fullName","operator":"equal","valu
 ### GET users with sort
 GET {{host}}/api/auth/users?sort=[{"field":"email","direction":"asc"}]
 
+### GET users with pagination
+GET {{host}}/api/auth/users?skip=1&limit=3
+
 
 ### POST create user
 POST {{host}}/api/auth/users
