@@ -32,14 +32,38 @@ paths:
       description: Get the list of all users.
       operationId: get_list_api_auth_users_get
       parameters:
-      - name: filters
+      - name: where
         in: query
         required: false
         schema:
           anyOf:
           - type: string
           - type: 'null'
-          title: Filters
+          title: Where
+      - name: order_by
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Order By
+      - name: skip
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Skip
+      - name: limit
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Limit
       responses:
         '200':
           description: Successful Response
