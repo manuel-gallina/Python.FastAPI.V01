@@ -32,22 +32,22 @@ paths:
       description: Get the list of all users.
       operationId: get_list_api_auth_users_get
       parameters:
-      - name: where
+      - name: filters
         in: query
         required: false
         schema:
           anyOf:
           - type: string
           - type: 'null'
-          title: Where
-      - name: order_by
+          title: Filters
+      - name: sort
         in: query
         required: false
         schema:
           anyOf:
           - type: string
           - type: 'null'
-          title: Order By
+          title: Sort
       - name: skip
         in: query
         required: false

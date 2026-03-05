@@ -166,11 +166,11 @@ class QueryBuilderCompiledParams(BaseModel):
 class QueryBuilderParams(BaseModel):
     """The parameters for building a query."""
 
-    where: Annotated[
-        str | None, pydantic.Field(validation_alias=AliasChoices("where", "filters"))
+    filters: Annotated[
+        str | None, pydantic.Field(validation_alias=AliasChoices("filters", "where"))
     ] = None
-    order_by: Annotated[
-        str | None, pydantic.Field(validation_alias=AliasChoices("orderBy", "sort"))
+    sort: Annotated[
+        str | None, pydantic.Field(validation_alias=AliasChoices("sort", "orderBy"))
     ] = None
     skip: int | None = None
     limit: int | None = None
@@ -241,9 +241,9 @@ class IQueryBuilder:
                 or if the limit exceeds the maximum allowed.
         """
         raw_where: dict[str, Any] | None = None
-        if request_params.where is not None:
+        if request_params.filters is not None:
             try:
-                raw_where = json.loads(request_params.where)
+                raw_where = json.loads(request_params.filters)
             except json.JSONDecodeError as e:
                 detail = (
                     "Invalid 'filters' query parameter. Must be a valid JSON string."
@@ -259,9 +259,9 @@ class IQueryBuilder:
         where, params = self.build_where(raw_where, request_id)
 
         raw_order_by: list[dict[str, str]] | None = None
-        if request_params.order_by is not None:
+        if request_params.sort is not None:
             try:
-                raw_order_by = json.loads(request_params.order_by)
+                raw_order_by = json.loads(request_params.sort)
             except json.JSONDecodeError as e:
                 detail = "Invalid 'sort' query parameter. Must be a valid JSON string."
                 raise ApiError(
