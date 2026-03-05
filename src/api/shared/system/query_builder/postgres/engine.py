@@ -186,6 +186,31 @@ class LessThanOrEqual(Operator):
         return f"{field.definition} <= {self.param(field, params, value)}"
 
 
+# class _ScalarComparisonOperator(Operator):
+#     _symbol: str
+#
+#     @override
+#     def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
+#         Equal.validate_value(value)
+#         return f"{field.definition} {self._symbol} {self.param(field, params, value)}"
+#
+#
+# class GreaterThan(_ScalarComparisonOperator):
+#     _symbol = ">"
+#
+#
+# class GreaterThanOrEqual(_ScalarComparisonOperator):
+#     _symbol = ">="
+#
+#
+# class LessThan(_ScalarComparisonOperator):
+#     _symbol = "<"
+#
+#
+# class LessThanOrEqual(_ScalarComparisonOperator):
+#     _symbol = "<="
+
+
 class IsNull(Operator):
     """IS NULL operator for query building."""
 
