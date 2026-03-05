@@ -114,7 +114,30 @@ class IOperator(ABC):
 class Operators(StrEnum):
     """Supported query operators."""
 
-    EQUAL = auto()
+    EQUAL = "equal"
+    I_EQUAL = "iEqual"
+    NOT_EQUAL = "notEqual"
+    I_NOT_EQUAL = "iNotEqual"
+    LIKE = "like"
+    I_LIKE = "iLike"
+    STARTS_WITH = "startsWith"
+    I_STARTS_WITH = "iStartsWith"
+    ENDS_WITH = "endsWith"
+    I_ENDS_WITH = "iEndsWith"
+    CONTAINS = "contains"
+    I_CONTAINS = "iContains"
+    GREATER_THAN = "greaterThan"
+    GREATER_THAN_OR_EQUAL = "greaterThanOrEqual"
+    LESS_THAN = "lessThan"
+    LESS_THAN_OR_EQUAL = "lessThanOrEqual"
+    IS_NULL = "isNull"
+    IS_NOT_NULL = "isNotNull"
+    IS_EMPTY = "isEmpty"
+    IS_NOT_EMPTY = "isNotEmpty"
+    IN = "in"
+    NOT_IN = "notIn"
+    ANY = "any"
+    ALL = "all"
 
 
 class Conditions(StrEnum):
