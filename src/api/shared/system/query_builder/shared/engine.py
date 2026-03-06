@@ -50,7 +50,7 @@ class Field:
 
 
 ScalarValue = str | int | float | bool | None
-Value = ScalarValue | list[ScalarValue]
+Value = ScalarValue | list[ScalarValue] | dict[str, Any]
 
 
 class IOperator(ABC):
@@ -71,7 +71,7 @@ class IOperator(ABC):
         raise NotImplementedError
 
     @classmethod
-    def param(cls, field: Field, params: dict[str, Any], value: Value) -> str:
+    def sql_param(cls, field: Field, params: dict[str, Any], value: Value) -> str:
         """Registers a parameter for the given value and returns its placeholder.
 
         Args:
@@ -83,7 +83,11 @@ class IOperator(ABC):
         Returns:
             str: The parameter placeholder to be used in the query.
         """
-        param_name = f"{field.name}_{uuid4().hex}"
+
+        def normalize_param_name(name: str) -> str:
+            return "".join(c if c.isalnum() else "_" for c in name)
+
+        param_name = f"{normalize_param_name(field.name)}_{uuid4().hex}"
 
         if field.transform:
             params[param_name] = field.transform(value)
@@ -95,14 +99,24 @@ class IOperator(ABC):
         return f":{param_name}"
 
     @abstractmethod
-    def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
+    def compile(
+        self,
+        field: Field,
+        value: Value,
+        sql_params: dict[str, Any],
+        query_builder: "IQueryBuilder",
+        request_id: str = "N/A",
+    ) -> str:
         """Compiles the operator into a SQL expression for the given field and value.
 
         Args:
             field (Field): The field to which the operator is being applied.
             value (Value): The value to which the operator is being applied.
-            params (dict[str, Any]): The dictionary where any parameters
+            sql_params (dict[str, Any]): The dictionary where any parameters
                 needed for the operator will be registered.
+            query_builder (IQueryBuilder): The query builder instance, which can be
+                used to access other fields or operators if needed for compilation.
+            request_id (str): The unique ID of the request for tracing purposes.
 
         Returns:
             str: The SQL expression representing the operator
@@ -207,6 +221,16 @@ class PaginationLimitConfig(BaseModel):
 
 
 QUERY_BUILDER_ERROR_MESSAGE = "Query builder error."
+
+SUBQUERY_WHERE = "/*{{SUBQUERY_WHERE_PLACEHOLDER}}*/"
+"""A placeholder for where clauses in subqueries.
+
+When the query requires filtering a subquery, this placeholder indicates where
+the compiled where clause should be injected in the subquery.
+
+If used multiple times in the same subquery, all occurrences
+will be replaced with the same where clause.
+"""
 
 
 class IQueryBuilder:
@@ -360,7 +384,9 @@ class IQueryBuilder:
                         raise ValueError(error)
                     field = self.fields[rule.field.lower()]
 
-                    compiled_rule = operator.compile(field, rule.value, params)
+                    compiled_rule = operator.compile(
+                        field, rule.value, params, self, request_id
+                    )
                     return compiled_rule, params
 
                 if "condition" in where_:

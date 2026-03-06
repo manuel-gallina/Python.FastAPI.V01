@@ -6,8 +6,14 @@ GET {{host}}/api/auth/users
 GET {{host}}/api/auth/users?filters={"field":"fullName","operator":"equal","value":"John Doe"}
 
 
+### GET users with filters by subquery
+GET {{host}}/api/auth/users?
+    filters={"field":"sameNames","operator":"any","value":{"field":"sameNames.email","operator":"equal","value":"john.doe3@tmp.com"}}
+
+
 ### GET users with sort
 GET {{host}}/api/auth/users?sort=[{"field":"email","direction":"asc"}]
+
 
 ### GET users with pagination
 GET {{host}}/api/auth/users?skip=1&limit=3

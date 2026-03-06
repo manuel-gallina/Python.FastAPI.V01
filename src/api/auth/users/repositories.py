@@ -12,6 +12,7 @@ from api.auth.users.schemas import CreateUserRequestSchema, UpdateUserRequestSch
 from api.shared.system.databases import get_request_main_async_db_session
 from api.shared.system.query_builder.postgres.engine import QueryBuilder
 from api.shared.system.query_builder.shared.engine import (
+    SUBQUERY_WHERE,
     Field,
     QueryBuilderCompiledParams,
 )
@@ -22,9 +23,18 @@ class UsersRepository:
 
     query_builder = QueryBuilder(
         [
-            Field("id", "auth.user.id"),
-            Field("fullName", "auth.user.full_name"),
-            Field("email", "auth.user.email"),
+            Field("id", "au.id"),
+            Field("fullName", "au.full_name"),
+            Field("email", "au.email"),
+            Field(
+                "sameNames",
+                f"select * "
+                f"from auth.user au_ "
+                f"where au_.full_name = au.full_name "
+                f"and au_.id != au.id "
+                f"and {SUBQUERY_WHERE}",
+            ),
+            Field("sameNames.email", "au_.email"),
         ]
     )
 
@@ -51,7 +61,7 @@ class UsersRepository:
         result = await main_async_db_session.execute(
             text(f"""
                 select *
-                from auth.user
+                from auth.user au
                 where {query_builder_params.where}
                 order by {query_builder_params.order_by}
                 offset {query_builder_params.skip}
@@ -85,7 +95,7 @@ class UsersRepository:
         result = await main_async_db_session.execute(
             text(f"""
                 select count(*)
-                from auth.user
+                from auth.user au
                 where {query_builder_params.where};
             """),
             query_builder_params.sql_params,
