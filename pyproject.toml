@@ -32,4 +32,5 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = [
     "clean_main_db: marks tests that require a clean main database state",
+    "seed_uuid: marks tests that require a seeded deterministic UUID generation",
 ]
