@@ -22,8 +22,10 @@ class Operator(IOperator, ABC):
         return f"cast(:{param_name} as {cast_type})"
 
 
-class Equal(Operator):
-    """Equality operator for query building."""
+class ScalarComparisonOperator(Operator, ABC):
+    """A base class for scalar comparison operators in PostgreSQL query building."""
+
+    _symbol: str
 
     @staticmethod
     def validate_value(value: Value) -> None:
@@ -39,7 +41,43 @@ class Equal(Operator):
     @override
     def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
         self.validate_value(value)
-        return f"{field.definition} = {self.param(field, params, value)}"
+        return f"{field.definition} {self._symbol} {self.param(field, params, value)}"
+
+
+class Equal(ScalarComparisonOperator):
+    """Equality operator for query building."""
+
+    _symbol = "="
+
+
+class NotEqual(ScalarComparisonOperator):
+    """Inequality operator for query building."""
+
+    _symbol = "is distinct from"
+
+
+class GreaterThan(ScalarComparisonOperator):
+    """Greater than operator for query building."""
+
+    _symbol = ">"
+
+
+class GreaterThanOrEqual(ScalarComparisonOperator):
+    """Greater than or equal operator for query building."""
+
+    _symbol = ">="
+
+
+class LessThan(ScalarComparisonOperator):
+    """Less than operator for query building."""
+
+    _symbol = "<"
+
+
+class LessThanOrEqual(ScalarComparisonOperator):
+    """Less than or equal operator for query building."""
+
+    _symbol = "<="
 
 
 class IEqual(Operator):
@@ -47,17 +85,8 @@ class IEqual(Operator):
 
     @override
     def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
-        Equal.validate_value(value)
+        ScalarComparisonOperator.validate_value(value)
         return f"lower({field.definition}) = lower({self.param(field, params, value)})"
-
-
-class NotEqual(Operator):
-    """Inequality operator for query building."""
-
-    @override
-    def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
-        Equal.validate_value(value)
-        return f"{field.definition} is distinct from {self.param(field, params, value)}"
 
 
 class INotEqual(Operator):
@@ -65,7 +94,7 @@ class INotEqual(Operator):
 
     @override
     def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
-        Equal.validate_value(value)
+        ScalarComparisonOperator.validate_value(value)
         return (
             f"lower({field.definition}) "
             f"is distinct from "
@@ -148,67 +177,6 @@ class IContains(Operator):
     @override
     def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
         return ILike().compile(field, f"%{value}%", params)
-
-
-class GreaterThan(Operator):
-    """Greater than operator for query building."""
-
-    @override
-    def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
-        Equal.validate_value(value)
-        return f"{field.definition} > {self.param(field, params, value)}"
-
-
-class GreaterThanOrEqual(Operator):
-    """Greater than or equal operator for query building."""
-
-    @override
-    def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
-        Equal.validate_value(value)
-        return f"{field.definition} >= {self.param(field, params, value)}"
-
-
-class LessThan(Operator):
-    """Less than operator for query building."""
-
-    @override
-    def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
-        Equal.validate_value(value)
-        return f"{field.definition} < {self.param(field, params, value)}"
-
-
-class LessThanOrEqual(Operator):
-    """Less than or equal operator for query building."""
-
-    @override
-    def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
-        Equal.validate_value(value)
-        return f"{field.definition} <= {self.param(field, params, value)}"
-
-
-# class _ScalarComparisonOperator(Operator):
-#     _symbol: str
-#
-#     @override
-#     def compile(self, field: Field, value: Value, params: dict[str, Any]) -> str:
-#         Equal.validate_value(value)
-#         return f"{field.definition} {self._symbol} {self.param(field, params, value)}"
-#
-#
-# class GreaterThan(_ScalarComparisonOperator):
-#     _symbol = ">"
-#
-#
-# class GreaterThanOrEqual(_ScalarComparisonOperator):
-#     _symbol = ">="
-#
-#
-# class LessThan(_ScalarComparisonOperator):
-#     _symbol = "<"
-#
-#
-# class LessThanOrEqual(_ScalarComparisonOperator):
-#     _symbol = "<="
 
 
 class IsNull(Operator):
