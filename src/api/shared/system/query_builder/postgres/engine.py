@@ -431,9 +431,7 @@ class Any_(Operator):  # noqa: N801
             value, request_id
         )
         sql_params.update(subquery_sql_params)
-        subquery = field.definition.replace(
-            SUBQUERY_WHERE, subquery_where
-        )
+        subquery = field.definition.replace(SUBQUERY_WHERE, subquery_where)
         return f"exists ({subquery})"
 
 
@@ -454,9 +452,7 @@ class All_(Operator):  # noqa: N801
             value, request_id
         )
         sql_params.update(subquery_sql_params)
-        subquery = field.definition.replace(
-            SUBQUERY_WHERE, f"not ({subquery_where})"
-        )
+        subquery = field.definition.replace(SUBQUERY_WHERE, f"not ({subquery_where})")
         return f"not exists ({subquery})"
 
 
