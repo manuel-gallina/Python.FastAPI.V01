@@ -11,4 +11,4 @@ When you are working on an issue, you should:
 7. Update OpenAPI specs by running `dagger call -q export-openapi-schema -o .` if the API has changed
 8. Commit the changes and push the current branch.
 9. Open a pull request with
-   `gh pr create -t "<issue_number> - <short_description>" -B main -F <path_to_spec_file_for_this_change>`.
+   `gh pr create -t "<current_issue_branch_name>" -B main -F <path_to_spec_file_for_this_change>`.
