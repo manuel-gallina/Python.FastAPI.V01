@@ -9,7 +9,10 @@
       "Bash(dagger call -q lint*)",
       "Bash(openspec new:*)",
       "Bash(openspec status:*)",
-      "Bash(openspec instructions:*)"
+      "Bash(openspec instructions:*)",
+      "Bash(ruff format:*)",
+      "Bash(ruff check:*)",
+      "Bash(uv run:*)"
     ]
   }
 }
