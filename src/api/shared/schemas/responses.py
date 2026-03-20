@@ -1,10 +1,13 @@
 """Schemas for API responses."""
 
 from api.shared.schemas.base import BaseSchema
+from api.shared.schemas.errors import ApiErrorSchema
 
 
 class ErrorResponseSchema(BaseSchema):
     """Schema for the response of an API endpoint when an error occurs."""
+
+    error: ApiErrorSchema
 
 
 class ObjectResponseSchema[DataT: BaseSchema](BaseSchema):

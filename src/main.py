@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 
 from api.routes import router as api_router
 from api.shared.schemas.errors import ApiError
+from api.shared.schemas.responses import ErrorResponseSchema
 from api.shared.system.databases import get_async_db_engine
 from api.shared.system.request_tracing import get_request_id, init_request_id
 from api.shared.system.settings import get_settings
@@ -88,10 +89,13 @@ async def http_exception_handler(
         Response: A JSON response containing the error details
             and the appropriate status code.
     """
-    api_error = exc if isinstance(exc, ApiError) else ApiError.from_http_exception(exc)
-    api_error.error.request_id = get_request_id(request)
+    api_error = (
+        exc
+        if isinstance(exc, ApiError)
+        else ApiError.from_http_exception(exc, get_request_id(request))
+    )
     return JSONResponse(
-        content=api_error.error.model_dump(mode="json"),
+        content=ErrorResponseSchema(error=api_error.error).model_dump(mode="json"),
         status_code=api_error.status_code,
     )
 

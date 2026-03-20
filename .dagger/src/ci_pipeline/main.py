@@ -157,7 +157,7 @@ class PythonFastapiV01:
         """
         test_container = Utils.with_env_variables(
             self.build_env(source, development=True), DEFAULT_ENV_VARS
-        ).with_exec(["pytest", "tests/unit_tests"])
+        ).with_exec(["pytest", "-q", "tests/unit_tests"])
         return await test_container.stdout()
 
     @function
@@ -172,7 +172,7 @@ class PythonFastapiV01:
         """
         test_container = Utils.with_env_variables(
             self.build_env(source, development=True), DEFAULT_ENV_VARS
-        ).with_exec(["pytest", "tests/integration_tests"])
+        ).with_exec(["pytest", "-q", "tests/integration_tests"])
         return await test_container.stdout()
 
     @function
@@ -234,7 +234,7 @@ class PythonFastapiV01:
             .with_service_binding("main_db", main_db_container)
             .with_service_binding("api", api_container)
             .with_exec(["alembic", "--name", "main", "upgrade", "head"])
-            .with_exec(["pytest", "-v", "tests/acceptance_tests"])
+            .with_exec(["pytest", "-q", "tests/acceptance_tests"])
         )
 
         return await test_container.stdout()

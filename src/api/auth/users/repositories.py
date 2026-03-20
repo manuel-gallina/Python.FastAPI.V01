@@ -10,15 +10,41 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.auth.users.models import User
 from api.auth.users.schemas import CreateUserRequestSchema, UpdateUserRequestSchema
 from api.shared.system.databases import get_request_main_async_db_session
+from api.shared.system.query_builder.postgres.engine import QueryBuilder
+from api.shared.system.query_builder.shared.engine import (
+    SUBQUERY_WHERE,
+    Field,
+    QueryBuilderCompiledParams,
+)
 
 
 class UsersRepository:
     """Repository for fetching user data from the database."""
 
+    query_builder = QueryBuilder(
+        [
+            Field("id", "au.id"),
+            Field("fullName", "au.full_name"),
+            Field("email", "au.email"),
+            Field(
+                "sameNames",
+                f"select * "
+                f"from auth.user au_ "
+                f"where au_.full_name = au.full_name "
+                f"and au_.id != au.id "
+                f"and {SUBQUERY_WHERE}",
+            ),
+            Field("sameNames.email", "au_.email"),
+        ]
+    )
+
     @staticmethod
     async def get_all(
         main_async_db_session: Annotated[
             AsyncSession, Depends(get_request_main_async_db_session)
+        ],
+        query_builder_params: Annotated[
+            QueryBuilderCompiledParams, Depends(query_builder.get_compiled_params)
         ],
     ) -> list[User]:
         """Fetch all users from the database.
@@ -26,11 +52,23 @@ class UsersRepository:
         Args:
             main_async_db_session (AsyncSession): The asynchronous database session
                 to use for the query.
+            query_builder_params (QueryBuilderCompiledParams): The compiled
+                query parameters containing the filters, sorting, and pagination.
 
         Returns:
             list[User]: A list of User objects representing all users in the database.
         """
-        result = await main_async_db_session.execute(text("select * from auth.user;"))
+        result = await main_async_db_session.execute(
+            text(f"""
+                select *
+                from auth.user au
+                where {query_builder_params.where}
+                order by {query_builder_params.order_by}
+                offset {query_builder_params.skip}
+                limit {query_builder_params.limit};
+            """),
+            query_builder_params.sql_params,
+        )
         rows = result.all()
         return [User.model_validate(row) for row in rows]
 
@@ -39,18 +77,28 @@ class UsersRepository:
         main_async_db_session: Annotated[
             AsyncSession, Depends(get_request_main_async_db_session)
         ],
+        query_builder_params: Annotated[
+            QueryBuilderCompiledParams, Depends(query_builder.get_compiled_params)
+        ],
     ) -> int:
         """Fetch the count of all users from the database.
 
         Args:
             main_async_db_session (AsyncSession): The asynchronous database session
                 to use for the query.
+            query_builder_params (QueryBuilderCompiledParams): The compiled
+                query parameters containing the filters to apply to the count query.
 
         Returns:
             int: The count of all users in the database.
         """
         result = await main_async_db_session.execute(
-            text("select count(*) from auth.user;")
+            text(f"""
+                select count(*)
+                from auth.user au
+                where {query_builder_params.where};
+            """),
+            query_builder_params.sql_params,
         )
         return result.scalar_one()
 

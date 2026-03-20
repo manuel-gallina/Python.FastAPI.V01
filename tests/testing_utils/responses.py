@@ -19,7 +19,8 @@ def assert_error_response(
         detail (str): The expected detailed error description.
     """
     body = response.json()
-    assert body["requestId"].startswith("REQ_")
-    assert body["code"] == code
-    assert body["message"] == message
-    assert body["detail"] == detail
+    error = body["error"]
+    assert error["requestId"].startswith("REQ_")
+    assert error["code"] == code
+    assert error["message"] == message
+    assert error["detail"] == detail

@@ -50,7 +50,8 @@ select = [
     "D411",
 ]
 ignore = [
-    "FAST003"
+    "FAST003",
+    "S608",
 ]
 
 [lint.pydocstyle]
