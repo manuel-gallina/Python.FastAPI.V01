@@ -79,3 +79,8 @@ async with AsyncSession(main_async_db_engine) as session:
     )
     row = result.mappings().one_or_none()
 ```
+
+## Docs
+
+The API OpenAPI spec is available in the `docs/openapi.yaml` file.
+Diagrams are available in the `docs/diagrams/` directory, created with [plantuml](https://plantuml.com/).

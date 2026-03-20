@@ -343,6 +343,7 @@ def test_notin_operator(query_builder: QueryBuilder) -> None:
 # --- Subquery operators ---
 
 
+# noinspection SqlResolve
 @pytest.mark.seed_uuid
 def test_any_operator(query_builder: QueryBuilder) -> None:
     """Test the 'any' operator injects a compiled subquery into exists()."""
@@ -368,6 +369,7 @@ def test_any_operator(query_builder: QueryBuilder) -> None:
     }
 
 
+# noinspection SqlResolve
 @pytest.mark.seed_uuid
 def test_all_operator(query_builder: QueryBuilder) -> None:
     """Test the 'all' operator injects a negated subquery into not exists()."""
