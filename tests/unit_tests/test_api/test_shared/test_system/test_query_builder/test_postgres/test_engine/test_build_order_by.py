@@ -22,31 +22,41 @@ def test_empty_order_by(query_builder: QueryBuilder) -> None:
 
 def test_single_field_asc(query_builder: QueryBuilder) -> None:
     """Test ordering by a single field ascending."""
-    order_by_clause = query_builder.build_order_by([{"field": "email", "direction": "asc"}])
+    order_by_clause = query_builder.build_order_by(
+        [{"field": "email", "direction": "asc"}]
+    )
     assert order_by_clause == "au.email asc"
 
 
 def test_single_field_desc(query_builder: QueryBuilder) -> None:
     """Test ordering by a single field descending."""
-    order_by_clause = query_builder.build_order_by([{"field": "email", "direction": "desc"}])
+    order_by_clause = query_builder.build_order_by(
+        [{"field": "email", "direction": "desc"}]
+    )
     assert order_by_clause == "au.email desc"
 
 
 def test_single_field_default_direction(query_builder: QueryBuilder) -> None:
     """Test that the default direction is asc when not specified."""
-    order_by_clause = query_builder.build_order_by([{"field": "email", "direction": "asc"}])
+    order_by_clause = query_builder.build_order_by(
+        [{"field": "email", "direction": "asc"}]
+    )
     assert order_by_clause == "au.email asc"
 
 
 def test_field_name_case_insensitive(query_builder: QueryBuilder) -> None:
     """Test that field lookup is case-insensitive."""
-    order_by_clause = query_builder.build_order_by([{"field": "Email", "direction": "asc"}])
+    order_by_clause = query_builder.build_order_by(
+        [{"field": "Email", "direction": "asc"}]
+    )
     assert order_by_clause == "au.email asc"
 
 
 def test_direction_case_insensitive(query_builder: QueryBuilder) -> None:
     """Test that direction is case-insensitive."""
-    order_by_clause = query_builder.build_order_by([{"field": "email", "direction": "DESC"}])
+    order_by_clause = query_builder.build_order_by(
+        [{"field": "email", "direction": "DESC"}]
+    )
     assert order_by_clause == "au.email desc"
 
 
