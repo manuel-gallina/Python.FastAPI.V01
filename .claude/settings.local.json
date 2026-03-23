@@ -10,9 +10,8 @@
       "Bash(openspec new:*)",
       "Bash(openspec status:*)",
       "Bash(openspec instructions:*)",
-      "Bash(ruff format:*)",
-      "Bash(ruff check:*)",
-      "Bash(uv run:*)"
+      "Bash(uv run ruff format -q *)",
+      "Bash(uv run ruff check -q *)"
     ]
   }
 }
