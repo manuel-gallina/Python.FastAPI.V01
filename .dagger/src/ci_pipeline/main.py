@@ -146,45 +146,87 @@ class PythonFastapiV01:
         return runner
 
     @function
-    async def test_unit(self, source: TestSourceDir) -> str:
+    async def test_unit(
+        self,
+        source: TestSourceDir,
+        *,
+        pytest_quiet: bool = False,
+        pytest_randomly_seed: str | None = None,
+    ) -> str:
         """Runs the unit tests using pytest.
 
         Args:
             source (TestSourceDir): The project source directory.
+            pytest_quiet (bool): Run tests with quiet output.
+            pytest_randomly_seed (str | None): The seed for random test case ordering
 
         Returns:
             str: The output of the pytest command.
         """
+        pytest_args = []
+        if pytest_quiet:
+            pytest_args.append("-q")
+        if pytest_randomly_seed:
+            pytest_args.append(f"--randomly-seed={pytest_randomly_seed}")
+
         test_container = Utils.with_env_variables(
             self.build_env(source, development=True), DEFAULT_ENV_VARS
-        ).with_exec(["pytest", "-q", "tests/unit_tests"])
+        ).with_exec(["pytest", *pytest_args, "tests/integration_tests"])
         return await test_container.stdout()
 
     @function
-    async def test_integration(self, source: TestSourceDir) -> str:
+    async def test_integration(
+        self,
+        source: TestSourceDir,
+        *,
+        pytest_quiet: bool = False,
+        pytest_randomly_seed: str | None = None,
+    ) -> str:
         """Runs the integration tests using pytest.
 
         Args:
             source (TestSourceDir): The project source directory.
+            pytest_quiet (bool): Run tests with quiet output.
+            pytest_randomly_seed (str | None): The seed for random test case ordering
 
         Returns:
             str: The output of the pytest command.
         """
+        pytest_args = []
+        if pytest_quiet:
+            pytest_args.append("-q")
+        if pytest_randomly_seed:
+            pytest_args.append(f"--randomly-seed={pytest_randomly_seed}")
+
         test_container = Utils.with_env_variables(
             self.build_env(source, development=True), DEFAULT_ENV_VARS
-        ).with_exec(["pytest", "-q", "tests/integration_tests"])
+        ).with_exec(["pytest", *pytest_args, "tests/integration_tests"])
         return await test_container.stdout()
 
     @function
-    async def test_acceptance(self, source: TestSourceDir) -> str:
+    async def test_acceptance(
+        self,
+        source: TestSourceDir,
+        *,
+        pytest_quiet: bool = False,
+        pytest_randomly_seed: str | None = None,
+    ) -> str:
         """Runs the acceptance tests using pytest.
 
         Args:
             source (TestSourceDir): The project source directory.
+            pytest_quiet (bool): Run tests with quiet output.
+            pytest_randomly_seed (str | None): The seed for random test case ordering
 
         Returns:
             str: The output of the pytest command.
         """
+        pytest_args = []
+        if pytest_quiet:
+            pytest_args.append("-q")
+        if pytest_randomly_seed:
+            pytest_args.append(f"--randomly-seed={pytest_randomly_seed}")
+
         main_db_container = (
             Utils.with_env_variables(
                 dag.container().from_("postgres:18"),
@@ -234,24 +276,38 @@ class PythonFastapiV01:
             .with_service_binding("main_db", main_db_container)
             .with_service_binding("api", api_container)
             .with_exec(["alembic", "--name", "main", "upgrade", "head"])
-            .with_exec(["pytest", "-q", "tests/acceptance_tests"])
+            .with_exec(["pytest", *pytest_args, "tests/integration_tests"])
         )
 
         return await test_container.stdout()
 
     @function
-    async def test(self, source: TestSourceDir) -> str:
+    async def test(
+        self,
+        source: TestSourceDir,
+        *,
+        pytest_quiet: bool = False,
+        pytest_randomly_seed: str | None = None,
+    ) -> str:
         """Runs all levels tests using pytest.
 
         Args:
             source (TestSourceDir): The project source directory.
+            pytest_quiet (bool): Run tests with quiet output.
+            pytest_randomly_seed (str | None): The seed for random test case ordering
 
         Returns:
             str: The output of the three pytest commands.
         """
-        unit_tests_output = await self.test_unit(source)
-        integration_tests_output = await self.test_integration(source)
-        acceptance_tests_output = await self.test_acceptance(source)
+        unit_tests_output = await self.test_unit(
+            source, pytest_quiet=pytest_quiet, pytest_randomly_seed=pytest_randomly_seed
+        )
+        integration_tests_output = await self.test_integration(
+            source, pytest_quiet=pytest_quiet, pytest_randomly_seed=pytest_randomly_seed
+        )
+        acceptance_tests_output = await self.test_acceptance(
+            source, pytest_quiet=pytest_quiet, pytest_randomly_seed=pytest_randomly_seed
+        )
 
         return "\n".join(
             [
