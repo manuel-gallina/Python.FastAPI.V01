@@ -2,16 +2,17 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(dagger call -s test-integration*)",
-      "Bash(dagger call -s test-acceptance*)",
-      "Bash(dagger call -s test-unit*)",
-      "Bash(dagger call -s test*)",
-      "Bash(dagger call -s lint*)",
+      "Bash(dagger call -s test-integration --pytest-quiet)",
+      "Bash(dagger call -s test-acceptance --pytest-quiet)",
+      "Bash(dagger call -s test-unit --pytest-quiet)",
+      "Bash(dagger call -s test --pytest-quiet)",
+      "Bash(dagger call -s lint)",
       "Bash(openspec new:*)",
       "Bash(openspec status:*)",
       "Bash(openspec instructions:*)",
       "Bash(uv run ruff format -q *)",
-      "Bash(uv run ruff check -q *)"
+      "Bash(uv run ruff check -q *)",
+      "Bash(uv lock:*)"
     ]
   }
 }

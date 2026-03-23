@@ -23,6 +23,7 @@ dev = [
     "psycopg-binary>=3.3.3",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
+    "pytest-randomly>=4.0.1",
     "ruff>=0.15.7",
     "yappi>=1.7.6",
 ]
