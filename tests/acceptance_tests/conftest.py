@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from api.shared.system.databases import get_async_db_engine
 from api.shared.system.settings import Settings, get_settings
-from httpx import AsyncClient
+from httpx import AsyncClient, Client
 from pydantic_settings import BaseSettings
 from sqlalchemy import Connection, inspect, text
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -112,4 +112,19 @@ async def http_client(test_settings: TestSettings) -> AsyncGenerator[AsyncClient
 
     """
     async with AsyncClient(base_url=test_settings.test_api_base_url) as client:
+        yield client
+
+
+@pytest.fixture
+def sync_http_client(test_settings: TestSettings) -> Client:
+    """Provides a synchronous HTTP client for benchmark tests.
+
+    Args:
+        test_settings (TestSettings): The settings for acceptance tests, used to
+            configure the base URL of the HTTP client.
+
+    Returns:
+        Client: A synchronous HTTP client configured to interact with the API.
+    """
+    with Client(base_url=test_settings.test_api_base_url) as client:
         yield client

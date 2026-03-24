@@ -3,11 +3,25 @@
 This module defines a Dagger CI pipeline for the project.
 """
 
+import csv
+import io
 import tomllib
 from typing import Annotated
 
 import dagger
 from dagger import DefaultPath, Doc, Ignore, dag, function, object_type
+
+_DEFAULT_BASELINE_IMAGE = "ghcr.io/manuel-gallina/python-fastapi-v01:latest"
+_LOCUST_FILE = "/project/tests/acceptance_tests/non_functional/locustfiles/auth.py"
+_DB_ENV_VARS = {
+    "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
+    "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
+    "DATABASE__MAIN_CONNECTION__HOST": "main_db",
+    "DATABASE__MAIN_CONNECTION__PORT": "5432",
+    "DATABASE__MAIN_CONNECTION__USER": "admin",
+    "DATABASE__MAIN_CONNECTION__PASSWORD": "admin",
+    "DATABASE__MAIN_CONNECTION__NAME": "python_fastapi_v01",
+}
 
 
 class Utils:
@@ -52,6 +66,69 @@ BASE_IGNORES = [
     ".ruff_cache",
     ".env",
 ]
+
+
+def _parse_locust_csv(csv_text: str) -> dict[str, str]:
+    """Extracts the Aggregated row from a locust stats CSV string.
+
+    Args:
+        csv_text (str): Content of a locust *_stats.csv file.
+
+    Returns:
+        dict[str, str]: The aggregated row as a dict, or empty dict if not found.
+    """
+    reader = csv.DictReader(io.StringIO(csv_text))
+    for row in reader:
+        if row.get("Name") == "Aggregated":
+            return dict(row)
+    return {}
+
+
+def _format_comparison(current_csv: str, baseline_csv: str, baseline_image: str) -> str:
+    """Formats a human-readable performance comparison from two locust CSV outputs.
+
+    Args:
+        current_csv (str): Locust stats CSV for the current branch.
+        baseline_csv (str): Locust stats CSV for the baseline image.
+        baseline_image (str): The baseline image identifier (used in the header).
+
+    Returns:
+        str: A formatted comparison table with p50, p95, p99 and RPS.
+    """
+    current = _parse_locust_csv(current_csv)
+    baseline = _parse_locust_csv(baseline_csv)
+    baseline_tag = baseline_image.rsplit(":", maxsplit=1)[-1]
+
+    def fmt(val: str | None) -> str:
+        try:
+            return f"{float(val):.1f}"  # type: ignore[arg-type]
+        except (ValueError, TypeError):
+            return "N/A"
+
+    cw, vw = 20, 16
+    header = f"{'Metric':<{cw}} {'Current':>{vw}} {f'Baseline ({baseline_tag})':>{vw}}"
+    separator = "-" * len(header)
+
+    def row(label: str, cur: str | None, base: str | None) -> str:
+        return f"{label:<{cw}} {fmt(cur):>{vw}} {fmt(base):>{vw}}"
+
+    failures_row = (
+        f"{'Failures':<{cw}}"
+        f" {current.get('Failure Count', 'N/A'):>{vw}}"
+        f" {baseline.get('Failure Count', 'N/A'):>{vw}}"
+    )
+    lines = [
+        "## Performance Comparison",
+        "",
+        header,
+        separator,
+        row("p50 latency (ms)", current.get("50%"), baseline.get("50%")),
+        row("p95 latency (ms)", current.get("95%"), baseline.get("95%")),
+        row("p99 latency (ms)", current.get("99%"), baseline.get("99%")),
+        row("Requests/s", current.get("Requests/s"), baseline.get("Requests/s")),
+        failures_row,
+    ]
+    return "\n".join(lines)
 
 
 @object_type
@@ -145,6 +222,42 @@ class PythonFastapiV01:
 
         return runner
 
+    def _live_environment(
+        self, api_app: dagger.Container
+    ) -> tuple[dagger.Service, dagger.Service]:
+        """Creates a live database and API service pair for testing.
+
+        Args:
+            api_app (dagger.Container): The API application container, without
+                database environment variables or service bindings applied.
+
+        Returns:
+            tuple[dagger.Service, dagger.Service]: A (db_service, api_service) pair
+                where the API service is bound to the database service.
+        """
+        db_service = (
+            Utils.with_env_variables(
+                dag.container().from_("postgres:18"),
+                {
+                    "POSTGRES_USER": "admin",
+                    "POSTGRES_PASSWORD": "admin",
+                    "POSTGRES_DB": "python_fastapi_v01",
+                },
+            )
+            .with_exposed_port(5432)
+            .as_service()
+        )
+
+        api_service = (
+            Utils.with_env_variables(api_app, _DB_ENV_VARS)
+            .with_service_binding("main_db", db_service)
+            .with_exposed_port(8000)
+            .with_entrypoint(["fastapi", "run", "/project/src/main.py"])
+            .as_service()
+        )
+
+        return db_service, api_service
+
     @function
     async def test_unit(
         self,
@@ -171,7 +284,7 @@ class PythonFastapiV01:
 
         test_container = Utils.with_env_variables(
             self.build_env(source, development=True), DEFAULT_ENV_VARS
-        ).with_exec(["pytest", *pytest_args, "tests/integration_tests"])
+        ).with_exec(["pytest", *pytest_args, "tests/unit_tests"])
         return await test_container.stdout()
 
     @function
@@ -227,59 +340,111 @@ class PythonFastapiV01:
         if pytest_randomly_seed:
             pytest_args.append(f"--randomly-seed={pytest_randomly_seed}")
 
-        main_db_container = (
-            Utils.with_env_variables(
-                dag.container().from_("postgres:18"),
-                {
-                    "POSTGRES_USER": "admin",
-                    "POSTGRES_PASSWORD": "admin",
-                    "POSTGRES_DB": "python_fastapi_v01",
-                },
-            )
-            .with_exposed_port(5432)
-            .as_service()
-        )
-
-        api_container = (
-            Utils.with_env_variables(
-                self.build_env(source),
-                {
-                    "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
-                    "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
-                    "DATABASE__MAIN_CONNECTION__HOST": "main_db",
-                    "DATABASE__MAIN_CONNECTION__PORT": "5432",
-                    "DATABASE__MAIN_CONNECTION__USER": "admin",
-                    "DATABASE__MAIN_CONNECTION__PASSWORD": "admin",
-                    "DATABASE__MAIN_CONNECTION__NAME": "python_fastapi_v01",
-                },
-            )
-            .with_service_binding("main_db", main_db_container)
-            .with_exposed_port(8000)
-            .with_entrypoint(["fastapi", "run", "/project/src/main.py"])
-            .as_service()
-        )
+        db_service, api_service = self._live_environment(self.build_env(source))
 
         test_container = (
             Utils.with_env_variables(
                 self.build_env(source, development=True),
-                {
-                    "TEST_API_BASE_URL": "http://api:8000",
-                    "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
-                    "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
-                    "DATABASE__MAIN_CONNECTION__HOST": "main_db",
-                    "DATABASE__MAIN_CONNECTION__PORT": "5432",
-                    "DATABASE__MAIN_CONNECTION__USER": "admin",
-                    "DATABASE__MAIN_CONNECTION__PASSWORD": "admin",
-                    "DATABASE__MAIN_CONNECTION__NAME": "python_fastapi_v01",
-                },
+                {"TEST_API_BASE_URL": "http://api:8000", **_DB_ENV_VARS},
             )
-            .with_service_binding("main_db", main_db_container)
-            .with_service_binding("api", api_container)
+            .with_service_binding("main_db", db_service)
+            .with_service_binding("api", api_service)
             .with_exec(["alembic", "--name", "main", "upgrade", "head"])
-            .with_exec(["pytest", *pytest_args, "tests/integration_tests"])
+            .with_exec(
+                [
+                    "pytest",
+                    *pytest_args,
+                    "tests/acceptance_tests/functional",
+                    "tests/acceptance_tests/non_functional",
+                    "--ignore=tests/acceptance_tests/non_functional/locustfiles",
+                ]
+            )
         )
 
         return await test_container.stdout()
+
+    @function
+    async def test_performance(
+        self,
+        source: TestSourceDir,
+        *,
+        baseline_image: Annotated[
+            str,
+            Doc(
+                "Docker image to use as the performance baseline. "
+                "Defaults to the latest published image."
+            ),
+        ] = _DEFAULT_BASELINE_IMAGE,
+        users: Annotated[int, Doc("number of concurrent locust users")] = 10,
+        spawn_rate: Annotated[
+            int, Doc("rate at which locust users are spawned per second")
+        ] = 2,
+        run_time: Annotated[
+            str, Doc("duration of each locust run (e.g. '30s', '1m')")
+        ] = "30s",
+    ) -> str:
+        """Runs comparative load tests between the current branch and a baseline image.
+
+        Spins up two live environments: one built from the current source and one
+        from the baseline Docker image. Runs the same locust scenario against both
+        and returns a human-readable comparison of p50, p95, p99 latency and RPS.
+
+        Args:
+            source (TestSourceDir): The project source directory.
+            baseline_image (str): Docker image to use as the performance baseline.
+            users (int): Number of concurrent locust users.
+            spawn_rate (int): Rate at which locust users are spawned (per second).
+            run_time (str): Duration of each locust run (e.g. '30s', '1m').
+
+        Returns:
+            str: A human-readable comparison report of latency and RPS metrics.
+        """
+        current_db, current_api = self._live_environment(self.build_env(source))
+        baseline_db, baseline_api = self._live_environment(
+            dag.container().from_(baseline_image)
+        )
+
+        dev_env = self.build_env(source, development=True)
+        stats_dir = f"{PROJECT_PATH}/locust_output"
+        locust_cmd = [
+            "locust",
+            "-f",
+            _LOCUST_FILE,
+            "--headless",
+            f"--users={users}",
+            f"--spawn-rate={spawn_rate}",
+            f"--run-time={run_time}",
+            f"--csv={stats_dir}/stats",
+        ]
+        stats_file = f"{stats_dir}/stats_stats.csv"
+
+        current_stats_csv = await (
+            Utils.with_env_variables(
+                dev_env, {"TEST_API_BASE_URL": "http://api:8000", **_DB_ENV_VARS}
+            )
+            .with_service_binding("main_db", current_db)
+            .with_service_binding("api", current_api)
+            .with_exec(["alembic", "--name", "main", "upgrade", "head"])
+            .with_exec(["mkdir", "-p", stats_dir])
+            .with_exec([*locust_cmd, "--host=http://api:8000"])
+            .file(stats_file)
+            .contents()
+        )
+
+        baseline_stats_csv = await (
+            Utils.with_env_variables(
+                dev_env, {"TEST_API_BASE_URL": "http://api:8000", **_DB_ENV_VARS}
+            )
+            .with_service_binding("main_db", baseline_db)
+            .with_service_binding("api", baseline_api)
+            .with_exec(["alembic", "--name", "main", "upgrade", "head"])
+            .with_exec(["mkdir", "-p", stats_dir])
+            .with_exec([*locust_cmd, "--host=http://api:8000"])
+            .file(stats_file)
+            .contents()
+        )
+
+        return _format_comparison(current_stats_csv, baseline_stats_csv, baseline_image)
 
     @function
     async def test(
