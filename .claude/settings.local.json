@@ -10,9 +10,18 @@
       "Bash(openspec new:*)",
       "Bash(openspec status:*)",
       "Bash(openspec instructions:*)",
-      "Bash(uv run ruff format -q *)",
-      "Bash(uv run ruff check -q *)",
-      "Bash(uv lock:*)"
+      "Bash(uv run ruff *)",
+      "Bash(uv lock *)",
+      "Bash(gh issue view *)",
+      "Bash(uv add:*)",
+      "Bash(cp:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)"
     ]
   }
 }
