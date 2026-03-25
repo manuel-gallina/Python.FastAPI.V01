@@ -10,10 +10,14 @@
       "Bash(openspec new:*)",
       "Bash(openspec status:*)",
       "Bash(openspec instructions:*)",
+      "Bash(openspec list:*)",
+      "Bash(openspec sync:*)",
+      "Bash(openspec --help)",
+      "Bash(openspec archive:*)",
       "Bash(uv run ruff *)",
+      "Bash(uv add:*)",
       "Bash(uv lock *)",
       "Bash(gh issue view *)",
-      "Bash(uv add:*)",
       "Bash(cp:*)",
       "Bash(git checkout:*)",
       "Bash(git add:*)",
@@ -21,11 +25,7 @@
       "Bash(git push:*)",
       "Bash(git fetch:*)",
       "Bash(git rebase:*)",
-      "Bash(git stash:*)",
-      "Bash(openspec list:*)",
-      "Bash(openspec sync:*)",
-      "Bash(openspec --help)",
-      "Bash(openspec archive:*)"
+      "Bash(git stash:*)"
     ]
   }
 }
