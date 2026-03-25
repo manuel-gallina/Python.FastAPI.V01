@@ -34,7 +34,7 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Run unit tests: `dagger call -s test-unit --pytest-quiet`
-- [ ] 7.2 Run integration tests: `dagger call -s test-integration --pytest-quiet`
-- [ ] 7.3 Run acceptance tests: `dagger call -s test-acceptance --pytest-quiet`
-- [ ] 7.4 Run formatting and linting: `uv run ruff format -s . && uv run ruff check -s .`
+- [x] 7.1 Run unit tests: `dagger call -s test-unit --pytest-quiet`
+- [x] 7.2 Run integration tests: `dagger call -s test-integration --pytest-quiet`
+- [x] 7.3 Run acceptance tests: `dagger call -s test-acceptance --pytest-quiet`
+- [x] 7.4 Run formatting and linting: `uv run ruff format -s . && uv run ruff check -s .`
