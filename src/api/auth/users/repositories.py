@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth.users.models import User
 from api.auth.users.schemas import CreateUserRequestSchema, UpdateUserRequestSchema
+from api.shared.security.passwords import hash_password
 from api.shared.system.databases import get_request_main_async_db_session
 from api.shared.system.query_builder.postgres.engine import QueryBuilder
 from api.shared.system.query_builder.shared.engine import (
@@ -145,9 +146,7 @@ class UsersRepository:
             User: The newly created User object.
         """
         user_id = uuid4()
-        # TODO(@manuel-gallina): replace with a proper password hashing implementation
-        #   https://github.com/manuel-gallina/Python.FastAPI.V01/issues/17
-        password_hash = f"placeholder:{body.email}"
+        password_hash = hash_password(body.password)
 
         result = await main_async_db_session.execute(
             text(
@@ -188,12 +187,10 @@ class UsersRepository:
         Returns:
             User | None: The updated User object if found, None otherwise.
         """
-        # TODO(@manuel-gallina): replace with a proper password hashing implementation
-        #   https://github.com/manuel-gallina/Python.FastAPI.V01/issues/17
         if not user:
             return None
 
-        password_hash = f"placeholder:{body.email}"
+        password_hash = hash_password(body.password)
         result = await main_async_db_session.execute(
             text(
                 """
