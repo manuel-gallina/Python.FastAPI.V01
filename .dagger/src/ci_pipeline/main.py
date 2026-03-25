@@ -6,8 +6,10 @@ This module defines a Dagger CI pipeline for the project.
 import csv
 import io
 import tomllib
+from abc import ABC, abstractmethod
+from enum import StrEnum, auto
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, override
 
 import dagger
 from dagger import DefaultPath, Doc, Ignore, dag, function, object_type
@@ -88,9 +90,116 @@ class _LocustUtils:
                 return dict(row)
         return {}
 
+    class IResultFormatter(ABC):
+        """Interface for formatting locust test results."""
+
+        @property
+        @abstractmethod
+        def header(self) -> str:
+            """Returns the header string for the comparison table."""
+
+        @property
+        @abstractmethod
+        def separator(self) -> str:
+            """Returns the separator string for the comparison table."""
+
+        @abstractmethod
+        def row(
+            self, label: str, current_value: str | None, baseline_value: str | None
+        ) -> str:
+            """Formats a single row of the comparison table."""
+
+    class TerminalResultFormatter(IResultFormatter):
+        """Formats locust test results for terminal output."""
+
+        cw: int
+        vw: int
+
+        def __init__(self, baseline_tag: str, cw: int = 20, vw: int = 16) -> None:
+            """Creates a TerminalResultFormatter instance.
+
+            Args:
+                baseline_tag (str): The tag of the baseline image
+                    to include in the header.
+                cw (int): Column width for the metric label column.
+                vw (int): Column width for the value columns.
+            """
+            self.baseline_tag = baseline_tag
+            self.cw = cw
+            self.vw = vw
+
+        @property
+        def header(self) -> str:
+            return (
+                f"{'Metric':<{self.cw}} "
+                f"| {'Current':>{self.vw}} "
+                f"| {f'Baseline ({self.baseline_tag})':>{self.vw}}"
+            )
+
+        @property
+        def separator(self) -> str:
+            return "-" * len(self.header)
+
+        def row(
+            self, label: str, current_value: str | None, baseline_value: str | None
+        ) -> str:
+            def fmt(val: str | None) -> str:
+                try:
+                    return f"{float(val):.1f}"  # type: ignore[arg-type]
+                except (ValueError, TypeError):
+                    return "N/A"
+
+            return (
+                f"{label:<{self.cw}} "
+                f"| {fmt(current_value):>{self.vw}} "
+                f"| {fmt(baseline_value):>{self.vw}}"
+            )
+
+    class MarkdownResultFormatter(IResultFormatter):
+        """Formats locust test results for Markdown output."""
+
+        def __init__(self, baseline_tag: str) -> None:
+            """Creates a MarkdownResultFormatter instance.
+
+            Args:
+                baseline_tag (str): The tag of the baseline image
+                    to include in the header.
+            """
+            self.baseline_tag = baseline_tag
+
+        @property
+        @override
+        def header(self) -> str:
+            return f"| Metric | Current | Baseline ({self.baseline_tag}) |"
+
+        @property
+        @override
+        def separator(self) -> str:
+            return "|-|-|-|"
+
+        @override
+        def row(
+            self, label: str, current_value: str | None, baseline_value: str | None
+        ) -> str:
+            def fmt(val: str | None) -> str:
+                try:
+                    return f"{float(val):.1f}"  # type: ignore[arg-type]
+                except (ValueError, TypeError):
+                    return "N/A"
+
+            return f"| {label} | {fmt(current_value)} | {fmt(baseline_value)} |"
+
+    class OutputFormats(StrEnum):
+        TERMINAL = auto()
+        MARKDOWN = auto()
+
     @staticmethod
     def format_comparison(
-        current_csv: str, baseline_csv: str, baseline_image: str, scenario_name: str
+        current_csv: str,
+        baseline_csv: str,
+        baseline_image: str,
+        scenario_name: str,
+        output_format: OutputFormats = OutputFormats.TERMINAL,
     ) -> str:
         """Formats a human-readable performance comparison from two locust CSV outputs.
 
@@ -99,46 +208,36 @@ class _LocustUtils:
             baseline_csv (str): Locust stats CSV for the baseline image.
             baseline_image (str): The baseline image identifier (used in the header).
             scenario_name (str): Scenario name to include in the output.
+            output_format (Formats): The output format for the comparison table.
 
         Returns:
-            str: A formatted comparison table with p50, p95, p99 and RPS.
+            str: A formatted comparison table.
         """
         current = _LocustUtils._parse_locust_csv(current_csv)
         baseline = _LocustUtils._parse_locust_csv(baseline_csv)
         baseline_tag = baseline_image.rsplit(":", maxsplit=1)[-1]
 
-        def fmt(val: str | None) -> str:
-            try:
-                return f"{float(val):.1f}"  # type: ignore[arg-type]
-            except (ValueError, TypeError):
-                return "N/A"
+        if output_format == _LocustUtils.OutputFormats.MARKDOWN:
+            formatter = _LocustUtils.MarkdownResultFormatter(baseline_tag)
+        else:
+            formatter = _LocustUtils.TerminalResultFormatter(baseline_tag, 20, 16)
 
-        cw, vw = 20, 16
-        header = (
-            f"{'Metric':<{cw}} "
-            f"| {'Current':>{vw}} "
-            f"| {f'Baseline ({baseline_tag})':>{vw}}"
-        )
-        separator = "-" * len(header)
-
-        def row(label: str, cur: str | None, base: str | None) -> str:
-            return f"{label:<{cw}} | {fmt(cur):>{vw}} | {fmt(base):>{vw}}"
-
-        failures_row = (
-            f"{'Failures':<{cw}} "
-            f"| {current.get('Failure Count', 'N/A'):>{vw}} "
-            f"| {baseline.get('Failure Count', 'N/A'):>{vw}}"
-        )
         lines = [
             f"## Scenario: {scenario_name}",
             "",
-            header,
-            separator,
-            row("p50 latency (ms)", current.get("50%"), baseline.get("50%")),
-            row("p95 latency (ms)", current.get("95%"), baseline.get("95%")),
-            row("p99 latency (ms)", current.get("99%"), baseline.get("99%")),
-            row("Requests/s", current.get("Requests/s"), baseline.get("Requests/s")),
-            failures_row,
+            formatter.header,
+            formatter.separator,
+            formatter.row("p50 latency (ms)", current.get("50%"), baseline.get("50%")),
+            formatter.row("p95 latency (ms)", current.get("95%"), baseline.get("95%")),
+            formatter.row("p99 latency (ms)", current.get("99%"), baseline.get("99%")),
+            formatter.row(
+                "Requests/s", current.get("Requests/s"), baseline.get("Requests/s")
+            ),
+            formatter.row(
+                "Failures",
+                current.get("Failure Count", "N/A"),
+                baseline.get("Failure Count", "N/A"),
+            ),
         ]
         return "\n".join(lines)
 
@@ -377,7 +476,7 @@ class PythonFastapiV01:
         return await test_container.stdout()
 
     @function
-    async def test_performance(
+    async def test_performance(  # noqa: PLR0913
         self,
         source: TestSourceDir,
         *,
@@ -394,7 +493,11 @@ class PythonFastapiV01:
         ] = 2,
         run_time: Annotated[
             str, Doc("duration of each locust run (e.g. '30s', '1m')")
-        ] = "30s",
+        ] = "5s",
+        output_format: Annotated[
+            str,
+            Doc("output format for the comparison report ('terminal' or 'markdown')"),
+        ] = _LocustUtils.OutputFormats.TERMINAL,
     ) -> str:
         """Runs comparative load tests between the current branch and a baseline image.
 
@@ -408,6 +511,7 @@ class PythonFastapiV01:
             users (int): Number of concurrent locust users.
             spawn_rate (int): Rate at which locust users are spawned (per second).
             run_time (str): Duration of each locust run (e.g. '30s', '1m').
+            output_format (str): Output format for the comparison report.
 
         Returns:
             str: A human-readable comparison report of latency and RPS metrics.
@@ -447,7 +551,7 @@ class PythonFastapiV01:
             locust_cmd = [
                 "locust",
                 "-f",
-                locustfiles_path / scenario,
+                str(locustfiles_path / scenario),
                 "--headless",
                 f"--users={users}",
                 f"--spawn-rate={spawn_rate}",
@@ -464,11 +568,15 @@ class PythonFastapiV01:
 
             results.append(
                 _LocustUtils.format_comparison(
-                    current_stats_csv, baseline_stats_csv, baseline_image, scenario
+                    current_stats_csv,
+                    baseline_stats_csv,
+                    baseline_image,
+                    scenario,
+                    _LocustUtils.OutputFormats(output_format),
                 )
             )
 
-        return "# Performance Test Results\n\n" + "\n\n".join(results)
+        return "# Performance test results\n\n" + "\n\n".join(results)
 
     @function
     async def test(
