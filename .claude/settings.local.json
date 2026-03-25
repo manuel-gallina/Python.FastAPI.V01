@@ -21,7 +21,11 @@
       "Bash(git push:*)",
       "Bash(git fetch:*)",
       "Bash(git rebase:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(openspec list:*)",
+      "Bash(openspec sync:*)",
+      "Bash(openspec --help)",
+      "Bash(openspec archive:*)"
     ]
   }
 }
