@@ -1,6 +1,6 @@
 """Fixtures for acceptance tests."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 from typing import Any
 
 import pytest
@@ -116,7 +116,7 @@ async def http_client(test_settings: TestSettings) -> AsyncGenerator[AsyncClient
 
 
 @pytest.fixture
-def sync_http_client(test_settings: TestSettings) -> Client:
+def sync_http_client(test_settings: TestSettings) -> Generator[Client, Any]:
     """Provides a synchronous HTTP client for benchmark tests.
 
     Args:

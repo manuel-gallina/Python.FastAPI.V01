@@ -12,7 +12,7 @@ class AuthUser(HttpUser):
 
     @task(3)
     def get_server_info(self) -> None:
-        """GET /api/server-info — lightweight health-check style endpoint."""
+        """GET /api/server-info — lightweight health check style endpoint."""
         self.client.get("/api/server-info")
 
     @task(1)

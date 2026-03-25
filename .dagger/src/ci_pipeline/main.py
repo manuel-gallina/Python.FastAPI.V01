@@ -6,13 +6,14 @@ This module defines a Dagger CI pipeline for the project.
 import csv
 import io
 import tomllib
+from pathlib import Path
 from typing import Annotated
 
 import dagger
 from dagger import DefaultPath, Doc, Ignore, dag, function, object_type
 
 _DEFAULT_BASELINE_IMAGE = "ghcr.io/manuel-gallina/python-fastapi-v01:latest"
-_LOCUST_FILE = "/project/tests/acceptance_tests/non_functional/locustfiles/auth.py"
+_LOCUSTFILES_PATH = "/project/tests/acceptance_tests/non_functional/locustfiles"
 _DB_ENV_VARS = {
     "DATABASE__MAIN_CONNECTION__DBMS": "postgresql",
     "DATABASE__MAIN_CONNECTION__DRIVER": "asyncpg",
@@ -68,67 +69,78 @@ BASE_IGNORES = [
 ]
 
 
-def _parse_locust_csv(csv_text: str) -> dict[str, str]:
-    """Extracts the Aggregated row from a locust stats CSV string.
+class _LocustUtils:
+    """Utility functions for processing locust test results."""
 
-    Args:
-        csv_text (str): Content of a locust *_stats.csv file.
+    @staticmethod
+    def _parse_locust_csv(csv_text: str) -> dict[str, str]:
+        """Extracts the Aggregated row from a locust stats CSV string.
 
-    Returns:
-        dict[str, str]: The aggregated row as a dict, or empty dict if not found.
-    """
-    reader = csv.DictReader(io.StringIO(csv_text))
-    for row in reader:
-        if row.get("Name") == "Aggregated":
-            return dict(row)
-    return {}
+        Args:
+            csv_text (str): Content of a locust *_stats.csv file.
 
+        Returns:
+            dict[str, str]: The aggregated row as a dict, or empty dict if not found.
+        """
+        reader = csv.DictReader(io.StringIO(csv_text))
+        for row in reader:
+            if row.get("Name") == "Aggregated":
+                return dict(row)
+        return {}
 
-def _format_comparison(current_csv: str, baseline_csv: str, baseline_image: str) -> str:
-    """Formats a human-readable performance comparison from two locust CSV outputs.
+    @staticmethod
+    def format_comparison(
+        current_csv: str, baseline_csv: str, baseline_image: str, scenario_name: str
+    ) -> str:
+        """Formats a human-readable performance comparison from two locust CSV outputs.
 
-    Args:
-        current_csv (str): Locust stats CSV for the current branch.
-        baseline_csv (str): Locust stats CSV for the baseline image.
-        baseline_image (str): The baseline image identifier (used in the header).
+        Args:
+            current_csv (str): Locust stats CSV for the current branch.
+            baseline_csv (str): Locust stats CSV for the baseline image.
+            baseline_image (str): The baseline image identifier (used in the header).
+            scenario_name (str): Scenario name to include in the output.
 
-    Returns:
-        str: A formatted comparison table with p50, p95, p99 and RPS.
-    """
-    current = _parse_locust_csv(current_csv)
-    baseline = _parse_locust_csv(baseline_csv)
-    baseline_tag = baseline_image.rsplit(":", maxsplit=1)[-1]
+        Returns:
+            str: A formatted comparison table with p50, p95, p99 and RPS.
+        """
+        current = _LocustUtils._parse_locust_csv(current_csv)
+        baseline = _LocustUtils._parse_locust_csv(baseline_csv)
+        baseline_tag = baseline_image.rsplit(":", maxsplit=1)[-1]
 
-    def fmt(val: str | None) -> str:
-        try:
-            return f"{float(val):.1f}"  # type: ignore[arg-type]
-        except (ValueError, TypeError):
-            return "N/A"
+        def fmt(val: str | None) -> str:
+            try:
+                return f"{float(val):.1f}"  # type: ignore[arg-type]
+            except (ValueError, TypeError):
+                return "N/A"
 
-    cw, vw = 20, 16
-    header = f"{'Metric':<{cw}} {'Current':>{vw}} {f'Baseline ({baseline_tag})':>{vw}}"
-    separator = "-" * len(header)
+        cw, vw = 20, 16
+        header = (
+            f"{'Metric':<{cw}} "
+            f"| {'Current':>{vw}} "
+            f"| {f'Baseline ({baseline_tag})':>{vw}}"
+        )
+        separator = "-" * len(header)
 
-    def row(label: str, cur: str | None, base: str | None) -> str:
-        return f"{label:<{cw}} {fmt(cur):>{vw}} {fmt(base):>{vw}}"
+        def row(label: str, cur: str | None, base: str | None) -> str:
+            return f"{label:<{cw}} | {fmt(cur):>{vw}} | {fmt(base):>{vw}}"
 
-    failures_row = (
-        f"{'Failures':<{cw}}"
-        f" {current.get('Failure Count', 'N/A'):>{vw}}"
-        f" {baseline.get('Failure Count', 'N/A'):>{vw}}"
-    )
-    lines = [
-        "## Performance Comparison",
-        "",
-        header,
-        separator,
-        row("p50 latency (ms)", current.get("50%"), baseline.get("50%")),
-        row("p95 latency (ms)", current.get("95%"), baseline.get("95%")),
-        row("p99 latency (ms)", current.get("99%"), baseline.get("99%")),
-        row("Requests/s", current.get("Requests/s"), baseline.get("Requests/s")),
-        failures_row,
-    ]
-    return "\n".join(lines)
+        failures_row = (
+            f"{'Failures':<{cw}} "
+            f"| {current.get('Failure Count', 'N/A'):>{vw}} "
+            f"| {baseline.get('Failure Count', 'N/A'):>{vw}}"
+        )
+        lines = [
+            f"## Scenario: {scenario_name}",
+            "",
+            header,
+            separator,
+            row("p50 latency (ms)", current.get("50%"), baseline.get("50%")),
+            row("p95 latency (ms)", current.get("95%"), baseline.get("95%")),
+            row("p99 latency (ms)", current.get("99%"), baseline.get("99%")),
+            row("Requests/s", current.get("Requests/s"), baseline.get("Requests/s")),
+            failures_row,
+        ]
+        return "\n".join(lines)
 
 
 @object_type
@@ -222,8 +234,9 @@ class PythonFastapiV01:
 
         return runner
 
+    @staticmethod
     def _live_environment(
-        self, api_app: dagger.Container
+        api_app: dagger.Container,
     ) -> tuple[dagger.Service, dagger.Service]:
         """Creates a live database and API service pair for testing.
 
@@ -405,46 +418,57 @@ class PythonFastapiV01:
         )
 
         dev_env = self.build_env(source, development=True)
+
+        locustfiles_path = Path(_LOCUSTFILES_PATH)
         stats_dir = f"{PROJECT_PATH}/locust_output"
-        locust_cmd = [
-            "locust",
-            "-f",
-            _LOCUST_FILE,
-            "--headless",
-            f"--users={users}",
-            f"--spawn-rate={spawn_rate}",
-            f"--run-time={run_time}",
-            f"--csv={stats_dir}/stats",
-        ]
         stats_file = f"{stats_dir}/stats_stats.csv"
 
-        current_stats_csv = await (
-            Utils.with_env_variables(
-                dev_env, {"TEST_API_BASE_URL": "http://api:8000", **_DB_ENV_VARS}
+        async def _run_locustfile(
+            container: dagger.Container,
+            db_service: dagger.Service,
+            api_service: dagger.Service,
+            locust_cmd_: list[str],
+        ) -> str:
+            return await (
+                Utils.with_env_variables(
+                    container, {"TEST_API_BASE_URL": "http://api:8000", **_DB_ENV_VARS}
+                )
+                .with_service_binding("main_db", db_service)
+                .with_service_binding("api", api_service)
+                .with_exec(["alembic", "--name", "main", "upgrade", "head"])
+                .with_exec(["mkdir", "-p", stats_dir])
+                .with_exec([*locust_cmd_, "--host=http://api:8000"])
+                .file(stats_file)
+                .contents()
             )
-            .with_service_binding("main_db", current_db)
-            .with_service_binding("api", current_api)
-            .with_exec(["alembic", "--name", "main", "upgrade", "head"])
-            .with_exec(["mkdir", "-p", stats_dir])
-            .with_exec([*locust_cmd, "--host=http://api:8000"])
-            .file(stats_file)
-            .contents()
-        )
 
-        baseline_stats_csv = await (
-            Utils.with_env_variables(
-                dev_env, {"TEST_API_BASE_URL": "http://api:8000", **_DB_ENV_VARS}
+        results = []
+        for scenario in ["normal_load.py", "heavy_load.py"]:
+            locust_cmd = [
+                "locust",
+                "-f",
+                locustfiles_path / scenario,
+                "--headless",
+                f"--users={users}",
+                f"--spawn-rate={spawn_rate}",
+                f"--run-time={run_time}",
+                f"--csv={stats_dir}/stats",
+            ]
+
+            current_stats_csv = await _run_locustfile(
+                dev_env, current_db, current_api, locust_cmd
             )
-            .with_service_binding("main_db", baseline_db)
-            .with_service_binding("api", baseline_api)
-            .with_exec(["alembic", "--name", "main", "upgrade", "head"])
-            .with_exec(["mkdir", "-p", stats_dir])
-            .with_exec([*locust_cmd, "--host=http://api:8000"])
-            .file(stats_file)
-            .contents()
-        )
+            baseline_stats_csv = await _run_locustfile(
+                dev_env, baseline_db, baseline_api, locust_cmd
+            )
 
-        return _format_comparison(current_stats_csv, baseline_stats_csv, baseline_image)
+            results.append(
+                _LocustUtils.format_comparison(
+                    current_stats_csv, baseline_stats_csv, baseline_image, scenario
+                )
+            )
+
+        return "# Performance Test Results\n\n" + "\n\n".join(results)
 
     @function
     async def test(
