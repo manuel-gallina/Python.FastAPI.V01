@@ -41,3 +41,4 @@ async def test_success(
     assert row is not None
     assert row["full_name"] == "New User"
     assert row["email"] == "new@tmp.com"
+    assert row["password_hash"].startswith("$argon2id$")
