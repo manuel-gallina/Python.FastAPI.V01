@@ -50,7 +50,8 @@ def format_coverage(
     """Formats a pytest-cov terminal output into a human-readable coverage report.
 
     Args:
-        raw_output (str): Raw stdout from pytest with --cov=src --cov-report=term-missing.
+        raw_output (str): Raw stdout from pytest with --cov=src
+            --cov-report=term-missing.
         output_format (CoverageFormats): The output format for the coverage report.
 
     Returns:

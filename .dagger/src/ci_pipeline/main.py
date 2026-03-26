@@ -267,7 +267,7 @@ class PythonFastapiV01:
             str, Doc("output format for the coverage report ('terminal' or 'markdown')")
         ] = CoverageFormats.TERMINAL,
     ) -> str:
-        """Runs unit and integration tests with coverage collection and returns a report.
+        """Runs unit and integration tests with coverage and returns a report.
 
         Args:
             source (TestSourceDir): The project source directory.
