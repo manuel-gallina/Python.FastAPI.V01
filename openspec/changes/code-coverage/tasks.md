@@ -17,4 +17,4 @@
 ## 4. Verification
 
 - [x] 4.1 Run `dagger call test-coverage` locally and confirm the output is valid markdown containing overall coverage and a per-module breakdown
-- [ ] 4.2 Push to the feature branch and confirm the `coverage` job appears on the PR, posts a comment, and does not block merge
+- [x] 4.2 Push to the feature branch and confirm the `coverage` job appears on the PR, posts a comment, and does not block merge
