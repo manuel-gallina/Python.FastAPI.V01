@@ -30,3 +30,20 @@ jobs:
         with:
           header: pytest-performance-result
           path: pr_comment.md
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install Dagger CLI
+        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
+      - name: Run coverage
+        run: dagger call test-coverage --output-format=markdown >> pr_comment.md
+      - name: Write PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pytest-coverage-result
+          path: pr_comment.md
