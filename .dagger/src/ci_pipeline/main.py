@@ -448,7 +448,7 @@ class PythonFastapiV01:
                 )
             )
 
-        return "# Performance test results\n\n" + "\n\n".join(results)
+        return "# Performance Report\n\n" + "\n\n".join(results)
 
     @function
     async def test(
