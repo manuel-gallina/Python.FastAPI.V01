@@ -53,6 +53,32 @@ Coverage collection is currently absent from the pipeline. The goal is to collec
 
 **Rationale**: `pytest-cov` is the standard pytest plugin; it integrates transparently with the existing pytest invocations. No configuration file changes needed beyond passing `--cov` flags.
 
+---
+
+### Branch coverage enabled via `--cov-branch`
+
+**Decision**: Pass `--cov-branch` to pytest alongside `--cov=src --cov-report=term-missing`.
+
+**Rationale**: `coverage.py` (the backend for `pytest-cov`) supports branch coverage natively — no additional dependency is needed. Enabling it produces two extra columns (`Branch`, `BrPart`) that give a more accurate picture of how well conditional paths are exercised. Without branch coverage, a file with an untested `else` branch would still show 100% line coverage.
+
+**Alternative considered**: Leave branch coverage disabled to keep the output simpler. Rejected because the additional signal is valuable for an audit report and costs nothing.
+
+---
+
+### All numeric columns displayed in both formatters
+
+**Decision**: Both the terminal and markdown formatters render all six columns: Module, Stmts, Miss, Branch, BrPart, Cover.
+
+**Rationale**: The `Missing` column (line numbers and branch arrows) can be arbitrarily long and does not format well in a markdown table or aligned terminal output. The numeric columns provide the full quantitative picture without noise.
+
+---
+
+### Modules sorted by ascending coverage percentage
+
+**Decision**: Rows in the low-coverage table are sorted by `cover_pct` ascending (least covered first).
+
+**Rationale**: The most actionable modules — those needing the most attention — appear at the top. Stable sort preserves the original ordering among modules with identical percentages.
+
 ## Risks / Trade-offs
 
 - **Coverage noise from integration tests**: Integration tests mock the database, so coverage numbers reflect mocked paths. This is acceptable for an audit-only report.

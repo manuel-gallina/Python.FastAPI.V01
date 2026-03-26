@@ -291,6 +291,7 @@ class PythonFastapiV01:
                 "pytest",
                 *pytest_args,
                 "--cov=src",
+                "--cov-branch",
                 "--cov-report=term-missing",
                 "tests/unit_tests",
                 "tests/integration_tests",
