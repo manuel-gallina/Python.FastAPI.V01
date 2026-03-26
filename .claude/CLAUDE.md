@@ -34,6 +34,9 @@ Each feature module under `src/api/` follows this layout:
   wrappers for single-object and list responses.
 - **Database engine**: created in lifespan, stored on `app.state.main_async_db_engine`, retrieved in routes via
   `get_main_async_db_engine` dependency (`src/api/shared/system/databases.py`).
+- **Password hashing** (`src/api/shared/security/passwords.py`): `hash_password(plain) -> str` and
+  `verify_password(plain, hashed) -> bool` using `passlib.context.CryptContext` with Argon2id. Always use these
+  utilities — never store plaintext passwords or roll custom hashing.
 
 ### Settings
 
