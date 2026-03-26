@@ -18,6 +18,7 @@
       "Bash(uv add:*)",
       "Bash(uv lock *)",
       "Bash(gh issue view *)",
+      "Bash(gh issue list *)",
       "Bash(gh pr create *)",
       "Bash(cp:*)",
       "Bash(git checkout:*)",
