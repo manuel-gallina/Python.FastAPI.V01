@@ -113,7 +113,7 @@ class MarkdownResultFormatter(IResultFormatter):
     @property
     @override
     def separator(self) -> str:
-        return "|-|-|-|"
+        return "|-|-:|-:|"
 
     @override
     def row(

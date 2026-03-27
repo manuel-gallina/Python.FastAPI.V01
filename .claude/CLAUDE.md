@@ -34,6 +34,9 @@ Each feature module under `src/api/` follows this layout:
   wrappers for single-object and list responses.
 - **Database engine**: created in lifespan, stored on `app.state.main_async_db_engine`, retrieved in routes via
   `get_main_async_db_engine` dependency (`src/api/shared/system/databases.py`).
+- **Password hashing** (`src/api/shared/security/passwords.py`): `hash_password(plain) -> str` and
+  `verify_password(plain, hashed) -> bool` using `passlib.context.CryptContext` with Argon2id. Always use these
+  utilities — never store plaintext passwords or roll custom hashing.
 
 ### Settings
 
@@ -79,6 +82,34 @@ async with AsyncSession(main_async_db_engine) as session:
     )
     row = result.mappings().one_or_none()
 ```
+
+### CI Pipeline (Dagger)
+
+The Dagger pipeline is defined in `.dagger/src/ci_pipeline/main.py` as the `PythonFastapiV01` object type. Utility
+helpers live under `.dagger/src/ci_pipeline/utils/`. The pipeline follows the pattern: Dagger function runs tests →
+returns a formatted string → GitHub Actions captures the output and optionally posts it as a sticky PR comment via
+`marocchino/sticky-pull-request-comment@v2`.
+
+Existing Dagger functions and their purpose:
+
+- `test-unit` / `test-integration` / `test-acceptance` / `test` — run pytest at each level
+- `test-coverage` — runs unit + integration tests with `--cov=src --cov-branch --cov-report=term-missing`, returns a
+  formatted coverage report (terminal or markdown); markdown report is posted as a sticky PR comment by the `coverage`
+  job in `tests.yml`
+- `test-performance` — comparative load test against a baseline Docker image; results posted as sticky PR comment
+- `export-openapi-schema` — exports the OpenAPI spec to `docs/openapi.yaml`
+- `publish-docker-image` — builds and pushes the Docker image to ghcr.io
+- `lint` — runs `ruff check`
+
+When adding new Dagger functions that return formatted output for PR comments, follow the `test-performance` /
+`test-coverage` pattern: accept an `output_format` parameter using a `StrEnum`, implement both terminal and markdown
+formatters, and add a corresponding job to `tests.yml` with `pull-requests: write` permission.
+
+#### Ruff rules to watch in Dagger/utils code
+
+- **PLR2004** — avoid bare numeric constants in comparisons; extract them as module-level constants
+- **PLW3301** — flatten nested `max`/`min` calls: use `max(x, *generator)` instead of `max(x, max(generator))`
+- **PLR0913** — functions are limited to 5 arguments; use a dataclass parameter when more are needed
 
 ## Docs
 

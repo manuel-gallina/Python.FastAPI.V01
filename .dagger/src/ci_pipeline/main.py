@@ -10,6 +10,7 @@ from typing import Annotated
 import dagger
 from dagger import DefaultPath, Doc, Ignore, dag, function, object_type
 
+from .utils.coverage import CoverageFormats, format_coverage
 from .utils.locust import OutputFormats, format_comparison
 
 _DEFAULT_BASELINE_IMAGE = "ghcr.io/manuel-gallina/python-fastapi-v01:latest"
@@ -256,6 +257,50 @@ class PythonFastapiV01:
         return await test_container.stdout()
 
     @function
+    async def test_coverage(
+        self,
+        source: TestSourceDir,
+        *,
+        pytest_quiet: bool = False,
+        pytest_randomly_seed: str | None = None,
+        output_format: Annotated[
+            str, Doc("output format for the coverage report ('terminal' or 'markdown')")
+        ] = CoverageFormats.TERMINAL,
+    ) -> str:
+        """Runs unit and integration tests with coverage and returns a report.
+
+        Args:
+            source (TestSourceDir): The project source directory.
+            pytest_quiet (bool): Run tests with quiet output.
+            pytest_randomly_seed (str | None): The seed for random test case ordering.
+            output_format (str): Output format for the coverage report.
+
+        Returns:
+            str: A formatted coverage report.
+        """
+        pytest_args = []
+        if pytest_quiet:
+            pytest_args.append("-q")
+        if pytest_randomly_seed:
+            pytest_args.append(f"--randomly-seed={pytest_randomly_seed}")
+
+        test_container = Utils.with_env_variables(
+            self.build_env(source, development=True), DEFAULT_ENV_VARS
+        ).with_exec(
+            [
+                "pytest",
+                *pytest_args,
+                "--cov=src",
+                "--cov-branch",
+                "--cov-report=term-missing",
+                "tests/unit_tests",
+                "tests/integration_tests",
+            ]
+        )
+        raw_output = await test_container.stdout()
+        return format_coverage(raw_output, CoverageFormats(output_format))
+
+    @function
     async def test_acceptance(
         self,
         source: TestSourceDir,
@@ -403,7 +448,7 @@ class PythonFastapiV01:
                 )
             )
 
-        return "# Performance test results\n\n" + "\n\n".join(results)
+        return "# Performance Report\n\n" + "\n\n".join(results)
 
     @function
     async def test(
